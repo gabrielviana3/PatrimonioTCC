@@ -414,3 +414,109 @@ button[onclick*="concluir"]:hover, .btn-finalizar:hover {
     background: #cbd5e1;
     color: #1e293b;
 }
+
+/* ==================== RESPONSIVIDADE ==================== */
+
+/* Container principal */
+.container {
+    display: flex;
+    height: 100vh;
+    position: relative; /* importante para o overlay */
+}
+
+/* Menu lateral - Desktop */
+.menu {
+    width: 250px;
+    background: var(--d);
+    color: white;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+/* Botão Hambúrguer */
+.btn-hamburger {
+    display: none;           /* escondido no desktop */
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 1100;
+    background: var(--p);
+    color: white;
+    border: none;
+    width: 50px;
+    height: 50px;
+    font-size: 28px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Mobile: Menu vira overlay deslizante */
+@media (max-width: 992px) {
+    .btn-hamburger {
+        display: block;
+    }
+
+    .menu {
+        position: fixed;
+        left: -280px;           /* escondido fora da tela */
+        top: 0;
+        height: 100vh;
+        width: 260px;
+        z-index: 1000;
+        box-shadow: 4px 0 15px rgba(0,0,0,0.3);
+        transition: left 0.4s ease;
+    }
+
+    .menu.open {
+        left: 0;                /* desliza para dentro */
+    }
+
+    .conteudo {
+        padding: 20px 15px;
+        margin-left: 0;
+        width: 100%;
+    }
+
+    /* Cards empilham verticalmente */
+    .cards {
+        flex-direction: column;
+    }
+
+    .card {
+        min-width: 100%;
+    }
+
+    /* Tabelas com scroll horizontal */
+    .table-container {
+        overflow-x: auto;
+    }
+
+    /* Formulários ficam mais confortáveis */
+    .formulario {
+        max-width: 100%;
+    }
+}
+
+/* Tablet intermediário */
+@media (min-width: 993px) and (max-width: 1200px) {
+    .menu {
+        width: 220px;
+        padding: 15px;
+    }
+}
+
+/* Ajustes finos em telas muito pequenas */
+@media (max-width: 480px) {
+    .login-box {
+        width: 92%;
+        padding: 30px 20px;
+    }
+
+    .modal-content {
+        width: 95%;
+        margin: 10px;
+    }
+}

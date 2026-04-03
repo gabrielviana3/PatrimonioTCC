@@ -795,3 +795,39 @@ function atualizarDashboard() {
 function fecharModal() {
     document.getElementById("modalGeral").classList.add("escondido");
 }   
+
+// ====================== RESPONSIVIDADE - MENU MOBILE ======================
+
+const btnMenuMobile = document.getElementById('btnMenuMobile');
+const menuLateral = document.querySelector('.menu');
+
+if (btnMenuMobile && menuLateral) {
+    btnMenuMobile.addEventListener('click', () => {
+        menuLateral.classList.toggle('open');
+    });
+
+    // Fechar menu ao clicar em um botão do menu (melhor UX)
+    document.querySelectorAll('.menu button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (window.innerWidth <= 992) {
+                menuLateral.classList.remove('open');
+            }
+        });
+    });
+
+    // Fechar menu ao clicar fora (opcional, mas bom)
+    document.addEventListener('click', (e) => {
+        if (window.innerWidth <= 992 && 
+            !menuLateral.contains(e.target) && 
+            e.target !== btnMenuMobile) {
+            menuLateral.classList.remove('open');
+        }
+    });
+}
+
+// Fechar menu automaticamente ao redimensionar para desktop
+window.addEventListener('resize', () => {
+    if (window.innerWidth > 992) {
+        menuLateral.classList.remove('open');
+    }
+});

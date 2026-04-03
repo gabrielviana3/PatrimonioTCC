@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Patrimônio ISEPAM</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+<div id="loginTela" class="login">
+    <div class="login-box">
+        <h2>ISEPAM</h2>
+        <p id="loginSubtitle">Gestor de bens patrimoniais</p>
+
+        <div id="formLogin">
+            <input type="email" id="email" placeholder="Email" autofocus>
+            <input type="password" id="senha" placeholder="Senha"
+            <br> 
+            <button onclick="login()">Entrar</button>
+            <p class="link-cadastro">
+                Não tem conta? <a href="#" onclick="mostrarTelaCadastro()">Criar cadastro</a>
+            </p>
+        </div>
+
+        <div id="formCadastro" class="escondido">
+            <h3>Criar Nova Conta</h3>
+            <input type="text" id="nomeCadastro" placeholder="Nome completo">
+            <input type="email" id="emailCadastro" placeholder="Email">
+            <input type="password" id="senhaCadastro" placeholder="Senha">
+            <select id="roleCadastro">
+                <option value="usuario">Usuário Comum</option>
+                <option value="tecnico">Técnico de Manutenção</option>
+                <option value="admin">Administrador</option>
+            </select>
+            <button onclick="cadastrarUsuario()">Cadastrar</button>
+            <button onclick="voltarParaLogin()" class="btn-secundario">Voltar para Login</button>
+        </div>
+    </div>
+</div>
+
+<div id="sistema" class="container escondido">
+    <aside class="menu">
+        <div class="menu-header">
+            <h2>Patrimônio</h2>
+            <p id="usuarioInfo"></p>
+        </div>
+        <nav>
+            <button onclick="mostrarTela('dashboard')">Dashboard</button>
+            <button onclick="mostrarTela('bens')">Inventário</button>
+            <button onclick="mostrarTela('cadastro')">Cadastrar</button>
+            <button onclick="mostrarTela('chamados')">Manutenção</button>
+            <button onclick="mostrarTela('relatorio')">Relatórios</button>
+            <button onclick="logout()" class="btn-sair">Sair</button>
+        </nav>
+    </aside>
+
+    <main class="conteudo">
+
+        <!-- Dashboard -->
+        <section id="dashboard" class="tela">
+            <h2>Dashboard</h2>
+            <div class="cards">
+                <div class="card" onclick="mostrarTela('bens')"><span id="totalBens">0</span><p>Itens Totais</p></div>
+                <div class="card" onclick="mostrarTela('chamados')"><span id="totalChamados">0</span><p>Chamados Totais</p></div>
+                <div class="card warning" id="cardAndamento"><span id="emAndamento">0</span><p>Em Manutenção</p></div>
+            </div>
+            <h3>Atividades Recentes</h3>
+            <div id="listaAtividades" class="atividades-log"></div>
+        </section>
+
+        <!-- Inventário -->
+        <section id="bens" class="tela escondido">
+            <h2>Inventário de Bens</h2>
+            <div class="filtros-grid">
+                <input id="buscaNumero" placeholder="Filtrar por Nº" onkeyup="filtrarTudo()">
+                <input id="buscaNome" placeholder="Filtrar por Nome" onkeyup="filtrarTudo()">
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr><th>Nº</th><th>Nome</th><th>Valor</th><th>Local</th><th>Estado</th><th>Ações</th></tr>
+                    </thead>
+                    <tbody id="corpoTabela"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Cadastro -->
+        <section id="cadastro" class="tela escondido">
+            <h2>Novo Cadastro de Bem</h2>
+            <div class="formulario">
+                <label>Data de Entrada:</label>
+                <input id="dataCad" type="date">
+                <input id="numero" placeholder="Número do Patrimônio *" autofocus>
+                <input id="nome" placeholder="Nome do Item *">
+                <input id="valor" type="number" step="0.01" placeholder="Valor (R$) *">
+                <input id="notaFiscal" placeholder="Nota Fiscal">
+                <input id="fornecedor" placeholder="Fornecedor">
+                <input id="localizacao" placeholder="Localização Inicial">
+                <label>Estado de Conservação:</label>
+                <select id="estado">
+                    <option value="Novo" selected>Novo</option>
+                    <option value="Bom">Bom</option>
+                    <option value="Regular">Regular</option>
+                    <option value="Ruim">Ruim</option>
+                </select>
+                <select id="categoria">
+                    <option>Mobiliário</option>
+                    <option>TI</option>
+                    <option>Áudio e Vídeo</option>
+                </select>
+                <button onclick="cadastrarBem()">Salvar Bem</button>
+            </div>
+        </section>
+
+        <!-- Chamados - Corrigido -->
+        <section id="chamados" class="tela escondido">
+            <h2>Gestão de Chamados</h2>
+            <div class="formulario">
+                <input id="patrimonioChamado" placeholder="Nº do Patrimônio">
+                <input id="descricaoChamado" placeholder="Descrição do problema">
+                <label>Foto (Opcional):</label>
+                <input type="file" id="fotoChamado" accept="image/*" capture="camera">
+                <button onclick="abrirChamado()">Abrir Chamado</button>
+            </div>
+            <hr>
+            <div class="abas-chamados">
+                <button onclick="renderizarChamados('Aberto')">Novos</button>
+                <button onclick="renderizarChamados('Em andamento')">Em Curso</button>
+                <button onclick="renderizarChamados('Concluído')">Finalizados</button>
+                <button onclick="renderizarChamados()">Todos</button>
+            </div>
+            <div id="renderChamados" class="lista-cards-chamados"></div>
+        </section>
+
+        <!-- RELATÓRIOS PDF -->
+        <section id="relatorio" class="tela escondido">
+            <div class="header-relatorio">
+                <h2>Relatórios</h2>
+                <div class="abas">
+                    <button class="aba-btn ativa" onclick="mudarAbaRelatorio(event, 'abaItens')">Patrimônio</button>
+                    <button class="aba-btn" onclick="mudarAbaRelatorio(event, 'abaChamados')">Chamados</button>
+                    <button class="aba-btn" onclick="mudarAbaRelatorio(event, 'abaAtividades')">Atividades</button>
+                    <button class="aba-btn" onclick="mudarAbaRelatorio(event, 'abaEstatisticas')">Estatísticas</button>
+                </div>
+            </div>
+
+            <!-- Filtros (visível apenas nas abas que precisam) -->
+            <div id="filtrosRelatorio" class="filtros-container">
+                <div class="campo-data">
+                    <label>De:</label> 
+                    <input type="date" id="dataInicio">
+                </div>
+                <div class="campo-data">
+                    <label>Até:</label> 
+                    <input type="date" id="dataFim">
+                </div>
+            </div>
+
+            <!-- Aba Patrimônio -->
+            <div id="abaItens" class="conteudo-aba">
+                <div style="display:flex; gap:10px; margin:15px 0; flex-wrap:wrap; align-items:center;">
+                    <select id="filtroCategoriaPDF">
+                        <option value="">Todas Categorias</option>
+                        <option>Mobiliário</option>
+                        <option>TI</option>
+                        <option>Áudio e Vídeo</option>
+                    </select>
+                    <select id="filtroEstadoPDF">
+                        <option value="">Todos Estados</option>
+                        <option>Novo</option>
+                        <option>Bom</option>
+                        <option>Regular</option>
+                        <option>Ruim</option>
+                    </select>
+                    <button onclick="gerarRelatorioItens()">Visualizar na Tela</button>
+                    <button onclick="gerarPDFItens()" class="btn-pdf">📄 Baixar PDF Patrimônio</button>
+                </div>
+            </div>
+
+            <!-- Aba Chamados -->
+            <div id="abaChamados" class="conteudo-aba escondido">
+                <button onclick="gerarRelatorioChamados()">Visualizar Chamados</button>
+                <button onclick="gerarPDFChamados()" class="btn-pdf">📄 Baixar PDF Chamados</button>
+            </div>
+
+            <!-- Aba Atividades -->
+            <div id="abaAtividades" class="conteudo-aba escondido">
+                <button onclick="gerarRelatorioAtividades()">Visualizar Logs</button>
+                <button onclick="gerarPDFAtividades()" class="btn-pdf">📄 Baixar PDF Atividades</button>
+            </div>
+
+            <!-- Aba Estatísticas -->
+            <div id="abaEstatisticas" class="conteudo-aba escondido">
+                <div class="cards" style="margin-top:20px; margin-bottom:30px;">
+                    <div class="card"><span id="valorTotalPatrimonio">R$ 0,00</span><p>Valor Total do Patrimônio</p></div>
+                    <div class="card"><span id="totalBensEstat">0</span><p>Itens Cadastrados</p></div>
+                </div>
+
+                <div style="display: flex; gap: 30px; flex-wrap: wrap; justify-content: center;">
+                    <!-- Gráfico de Categorias -->
+                    <div style="width: 380px;">
+                        <h3 style="text-align:center; margin-bottom:10px;">Distribuição por Categoria</h3>
+                        <canvas id="graficoCategoria" width="350" height="350"></canvas>
+                    </div>
+
+                    <!-- Gráfico de Estado de Conservação -->
+                    <div style="width: 380px;">
+                        <h3 style="text-align:center; margin-bottom:10px;">Estado de Conservação</h3>
+                        <canvas id="graficoEstado" width="350" height="350"></canvas>
+                    </div>
+                </div>
+
+                <button onclick="atualizarEstatisticas()" style="margin-top:30px; display:block; margin-left:auto; margin-right:auto;">
+                    Atualizar Estatísticas e Gráficos
+                </button>
+            </div>
+
+            <div class="preview-container">
+                <table id="tabelaRelatorio">
+                    <thead id="cabecalhoRelatorio"></thead>
+                    <tbody id="corpoRelatorio"></tbody>
+                </table>
+            </div>
+        </section>
+
+<div id="modalGeral" class="modal escondido">
+    <div class="modal-content">
+        <span class="close" onclick="fecharModal()">&times;</span>
+        <div id="conteudoModal"></div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

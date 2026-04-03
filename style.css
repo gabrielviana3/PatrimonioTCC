@@ -1,0 +1,416 @@
+:root { 
+    --p: #2563eb; 
+    --d: #0f172a; 
+    --bg: #f8fafc; 
+}
+
+body { 
+    margin: 0; 
+    font-family: 'Inter', sans-serif; 
+    background: var(--bg); 
+    color: #334155; 
+}
+
+.escondido { display: none !important; }
+
+/* Menu Lateral */
+.container { display: flex; height: 100vh; }
+.menu { width: 250px; background: var(--d); color: white; padding: 20px; display: flex; flex-direction: column; }
+.menu button { 
+    background: none; 
+    border: none; 
+    color: #94a3b8; 
+    padding: 12px; 
+    text-align: left; 
+    cursor: pointer; 
+    width: 100%; 
+    border-radius: 8px; 
+    margin: 4px 0;
+}
+.menu button:hover { background: #1e293b; color: white; }
+.btn-sair { margin-top: auto; color: #f87171 !important; }
+
+/* Telas e Conteúdo */
+.conteudo { flex: 1; padding: 30px; overflow-y: auto; }
+.tela { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+
+/* Cards Dashboard */
+.cards { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+.card { 
+    flex: 1; 
+    min-width: 180px;
+    background: #fff; 
+    border: 1px solid #e2e8f0; 
+    padding: 20px; 
+    border-radius: 12px; 
+    text-align: center; 
+    cursor: pointer; 
+}
+.card span { 
+    font-size: 32px; 
+    font-weight: bold; 
+    color: var(--p); 
+    display: block; 
+}
+
+/* Atividades Log */
+.atividades-log { 
+    background: #f1f5f9; 
+    padding: 15px; 
+    border-radius: 10px; 
+    max-height: 540px;
+    overflow-y: auto; 
+}
+.log-item { 
+    border-bottom: 1px solid #e2e8f0; 
+    padding: 8px 0; 
+    font-size: 13px; 
+}
+
+/* Formulários */
+.formulario { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 10px; 
+    max-width: 420px; 
+}
+input, select, textarea { 
+    padding: 10px; 
+    border: 1px solid #e2e8f0; 
+    border-radius: 8px; 
+}
+
+/* Tabelas */
+table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+th { text-align: left; background: #f1f5f9; padding: 12px; }
+td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
+
+/* Modal */
+.modal { 
+    position: fixed; top:0; left:0; width:100%; height:100%; 
+    background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index: 1000;
+}
+.modal-content { 
+    background:white; 
+    padding:30px; 
+    border-radius:12px; 
+    width:380px; 
+    position:relative; 
+    max-width: 90%;
+}
+.close { 
+    position:absolute; right:15px; top:10px; cursor:pointer; font-size:24px; 
+}
+
+/* Login */
+.login { 
+    height:100vh; 
+    display:flex; 
+    align-items:center; 
+    justify-content:center; 
+    background:var(--d); 
+}
+.login-box { 
+    background:white; 
+    padding:40px 30px; 
+    border-radius:16px; 
+    width:340px; 
+    display:flex; 
+    flex-direction:column; 
+    gap:12px; 
+    text-align:center; 
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+.login-box h3 { margin: 15px 0 20px 0; color: var(--d); }
+
+.link-cadastro {
+    text-align: center;
+    font-size: 14px;
+    margin-top: 10px;
+    color: #64748b;
+}
+.link-cadastro a {
+    color: var(--p);
+    text-decoration: underline;
+}
+
+.btn-secundario {
+    background: #64748b !important;
+}
+
+/* Abas */
+.abas { display: flex; gap: 10px; border-bottom: 2px solid #e2e8f0; margin-bottom: 20px; }
+.aba-btn { 
+    background:none; 
+    color:#64748b; 
+    border:none; 
+    padding:10px 15px; 
+    cursor:pointer; 
+    border-bottom: 3px solid transparent; 
+}
+.aba-btn.ativa { 
+    color:var(--p); 
+    border-bottom-color:var(--p); 
+    font-weight:bold; 
+}
+
+/* ==================== ESTILOS DOS CARDS DE CHAMADOS ==================== */
+
+.lista-cards-chamados {
+    margin-top: 20px;
+}
+
+.card-chamado {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    transition: all 0.2s ease;
+}
+
+.card-chamado:hover {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge.aberto { background: #3b82f6; }
+.badge.em-andamento { background: #f59e0b; }
+.badge.concluído { background: #10b981; }
+
+.card-chamado h4 {
+    margin: 8px 0 10px 0;
+    color: #1e2937;
+    font-size: 18px;
+}
+
+.descricao {
+    color: #475569;
+    line-height: 1.5;
+    margin-bottom: 12px;
+    font-size: 15px;
+}
+
+.foto-chamado {
+    max-width: 100%;
+    border-radius: 8px;
+    margin: 12px 0;
+    border: 1px solid #e2e8f0;
+}
+
+.feedback {
+    background: #f8fafc;
+    padding: 12px;
+    border-radius: 8px;
+    margin: 12px 0;
+    border-left: 4px solid #10b981;
+    font-size: 14.5px;
+}
+
+.acoes-card {
+    margin-top: 16px;
+    display: flex;
+    gap: 12px;
+}
+
+.acoes-card button {
+    flex: 1;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.acoes-card button:hover {
+    transform: translateY(-1px);
+}
+
+.btn-aceitar {
+    background: #3b82f6;
+    color: white;
+}
+
+.btn-aceitar:hover {
+    background: #2563eb;
+}
+
+.btn-finalizar {
+    background: #10b981;
+    color: white;
+}
+
+.btn-finalizar:hover {
+    background: #059669;
+}
+
+/* Abas de Chamados */
+.abas-chamados {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 20px 0 15px 0;
+}
+
+.abas-chamados button {
+    padding: 10px 16px;
+    background: #f1f5f9;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.abas-chamados button:hover {
+    background: #e2e8f0;
+}
+
+/* --- NOVOS ESTILOS DE BOTÕES --- */
+
+/* Estilo Base para TODOS os botões do sistema */
+button {
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s ease-in-out;
+    padding: 10px 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* Botão Principal (Azul) - Aplica a quase todos */
+button:not(.btn-secundario, .btn-sair, .btn-pdf, .aba-btn, .abas-chamados button) {
+    background-color: var(--p);
+    color: white;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1);
+}
+
+button:not(.btn-secundario, .btn-sair, .btn-pdf, .aba-btn, .abas-chamados button):hover {
+    background-color: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+/* Botões de Ação dentro dos Cards de Chamados */
+.acoes-card button {
+    flex: 1;
+    font-size: 14px;
+}
+
+/* Botão de Finalizar/Concluir (Verde) */
+button[onclick*="concluir"], button[onclick*="abrirModalFeedback"], .btn-finalizar {
+    background-color: #10b981 !important;
+    color: white !important;
+}
+
+button[onclick*="concluir"]:hover, .btn-finalizar:hover {
+    background-color: #059669 !important;
+}
+
+/* Botão de Excluir ou Sair (Vermelho) */
+.btn-sair, button[onclick*="excluir"] {
+    background-color: #ef4444 !important;
+    color: white !important;
+}
+
+.btn-sair:hover, button[onclick*="excluir"]:hover {
+    background-color: #dc2626 !important;
+}
+
+/* Botão Secundário (Cinza) */
+.btn-secundario {
+    background-color: #64748b !important;
+    color: white !important;
+}
+
+/* Estilo para as Abas (Filtros de Chamados e Relatórios) */
+.aba-btn, .abas-chamados button {
+    background: #f1f5f9;
+    color: #64748b;
+    border-radius: 6px;
+    padding: 8px 16px;
+}
+
+.aba-btn.ativa, .abas-chamados button:hover {
+    background: var(--p);
+    color: white;
+}
+/* Itens do Menu Lateral */
+.menu nav button {
+    background: transparent;
+    color: #cbd5e1;
+    padding: 12px 15px;
+    margin-bottom: 5px;
+    justify-content: flex-start;
+}
+
+.menu nav button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    padding-left: 20px; /* Efeito de deslize */
+}
+
+/* Abas de Chamados (Filtros) */
+.abas-chamados button {
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 13px;
+    padding: 8px 16px;
+}
+
+.abas-chamados button:hover {
+    background: #cbd5e1;
+    color: #1e293b;
+}
+
+/* Itens do Menu Lateral */
+.menu nav button {
+    background: transparent;
+    color: #cbd5e1;
+    padding: 12px 15px;
+    margin-bottom: 5px;
+    justify-content: flex-start;
+}
+
+.menu nav button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    padding-left: 20px; /* Efeito de deslize */
+}
+
+/* Abas de Chamados (Filtros) */
+.abas-chamados button {
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 13px;
+    padding: 8px 16px;
+}
+
+.abas-chamados button:hover {
+    background: #cbd5e1;
+    color: #1e293b;
+}

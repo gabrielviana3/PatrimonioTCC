@@ -796,38 +796,47 @@ function fecharModal() {
     document.getElementById("modalGeral").classList.add("escondido");
 }   
 
-// ====================== RESPONSIVIDADE - MENU MOBILE ======================
+// ====================== RESPONSIVIDADE - MENU MOBILE (VERSÃO MELHORADA) ======================
+function initMobileMenu() {
+    const btnMenu = document.getElementById('btnMenuMobile');
+    const menu = document.querySelector('.menu');
 
-const btnMenuMobile = document.getElementById('btnMenuMobile');
-const menuLateral = document.querySelector('.menu');
+    if (!btnMenu || !menu) {
+        console.warn("Elemento do menu mobile não encontrado");
+        return;
+    }
 
-if (btnMenuMobile && menuLateral) {
-    btnMenuMobile.addEventListener('click', () => {
-        menuLateral.classList.toggle('open');
+    // Toggle do menu
+    btnMenu.addEventListener('click', (e) => {
+        e.stopPropagation();
+        menu.classList.toggle('open');
     });
 
-    // Fechar menu ao clicar em um botão do menu (melhor UX)
+    // Fechar ao clicar em um item do menu
     document.querySelectorAll('.menu button').forEach(btn => {
         btn.addEventListener('click', () => {
             if (window.innerWidth <= 992) {
-                menuLateral.classList.remove('open');
+                menu.classList.remove('open');
             }
         });
     });
 
-    // Fechar menu ao clicar fora (opcional, mas bom)
+    // Fechar ao clicar fora do menu
     document.addEventListener('click', (e) => {
         if (window.innerWidth <= 992 && 
-            !menuLateral.contains(e.target) && 
-            e.target !== btnMenuMobile) {
-            menuLateral.classList.remove('open');
+            !menu.contains(e.target) && 
+            e.target !== btnMenu) {
+            menu.classList.remove('open');
+        }
+    });
+
+    // Fechar automaticamente ao redimensionar para desktop
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 992) {
+            menu.classList.remove('open');
         }
     });
 }
 
-// Fechar menu automaticamente ao redimensionar para desktop
-window.addEventListener('resize', () => {
-    if (window.innerWidth > 992) {
-        menuLateral.classList.remove('open');
-    }
-});
+// Executa quando o DOM estiver totalmente carregado
+document.addEventListener('DOMContentLoaded', initMobileMenu);

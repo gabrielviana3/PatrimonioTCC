@@ -415,45 +415,31 @@ button[onclick*="concluir"]:hover, .btn-finalizar:hover {
     color: #1e293b;
 }
 
-/* ==================== RESPONSIVIDADE ==================== */
+/* ====================== RESPONSIVIDADE - MENU MOBILE ====================== */
 
-/* Container principal */
-.container {
-    display: flex;
-    height: 100vh;
-    position: relative; /* importante para o overlay */
-}
-
-/* Menu lateral - Desktop */
-.menu {
-    width: 250px;
-    background: var(--d);
-    color: white;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    transition: all 0.3s ease;
-    flex-shrink: 0;
-}
-
-/* Botão Hambúrguer */
 .btn-hamburger {
-    display: none;           /* escondido no desktop */
+    display: none;
     position: fixed;
-    top: 15px;
-    left: 15px;
+    top: 18px;
+    left: 18px;
     z-index: 1100;
-    background: var(--p);
+    background: #2563eb;
     color: white;
     border: none;
-    width: 50px;
-    height: 50px;
+    width: 54px;
+    height: 54px;
     font-size: 28px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+    transition: all 0.2s;
 }
 
-/* Mobile: Menu vira overlay deslizante */
+.btn-hamburger:hover {
+    background: #1d4ed8;
+    transform: scale(1.05);
+}
+
 @media (max-width: 992px) {
     .btn-hamburger {
         display: block;
@@ -461,62 +447,51 @@ button[onclick*="concluir"]:hover, .btn-finalizar:hover {
 
     .menu {
         position: fixed;
-        left: -280px;           /* escondido fora da tela */
+        left: -290px;
         top: 0;
         height: 100vh;
-        width: 260px;
+        width: 280px;
+        background: var(--d);
         z-index: 1000;
-        box-shadow: 4px 0 15px rgba(0,0,0,0.3);
-        transition: left 0.4s ease;
+        transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 6px 0 25px rgba(0,0,0,0.35);
+        padding: 90px 20px 20px 20px;
+        overflow-y: auto;
     }
 
     .menu.open {
-        left: 0;                /* desliza para dentro */
+        left: 0;
     }
 
     .conteudo {
-        padding: 20px 15px;
-        margin-left: 0;
-        width: 100%;
+        padding-top: 80px;
+        padding-left: 16px;
+        padding-right: 16px;
     }
 
-    /* Cards empilham verticalmente */
+    /* Ajustes em telas pequenas */
     .cards {
-        flex-direction: column;
+        grid-template-columns: 1fr;
+        gap: 16px;
     }
 
-    .card {
-        min-width: 100%;
-    }
-
-    /* Tabelas com scroll horizontal */
-    .table-container {
-        overflow-x: auto;
-    }
-
-    /* Formulários ficam mais confortáveis */
     .formulario {
         max-width: 100%;
     }
-}
 
-/* Tablet intermediário */
-@media (min-width: 993px) and (max-width: 1200px) {
-    .menu {
-        width: 220px;
-        padding: 15px;
+    .tela {
+        padding: 20px 16px;
     }
 }
 
-/* Ajustes finos em telas muito pequenas */
+/* Telas muito pequenas */
 @media (max-width: 480px) {
-    .login-box {
-        width: 92%;
-        padding: 30px 20px;
+    .menu {
+        width: 260px;
     }
-
-    .modal-content {
-        width: 95%;
-        margin: 10px;
+    
+    .login-box {
+        width: 94%;
+        padding: 32px 24px;
     }
 }

@@ -1,6 +1,7 @@
 // ====================== DADOS ======================
 let bens = JSON.parse(localStorage.getItem("bens")) || [];
 let chamados = JSON.parse(localStorage.getItem("chamados")) || [];
+let filtroChamadoAtual = 'Todos';
 let atividades = JSON.parse(localStorage.getItem("atividades")) || [];
 let usuarios = JSON.parse(localStorage.getItem("usuarios")) || [
     { id: 1, nome: "Administrador", email: "admin@isepam.edu.br", senha: "123", role: "admin" },
@@ -199,7 +200,9 @@ function mostrarTela(id) {
     if (id === 'cadastro') {
         setTimeout(() => document.getElementById("numero").focus(), 100);
     }
-    if (id === 'chamados') renderizarChamados();
+    if (id === 'chamados') {
+    filtrarChamados('Aberto');  // mostra apenas chamados em aberto
+    }
     
     // NOVO: Quando a tela de relatório for aberta, verifica se a aba estatísticas está ativa
     if (id === 'relatorio') {
@@ -346,7 +349,7 @@ function excluirBem(num) {
 }
 
 // ====================== CHAMADOS (mantido por enquanto) ======================
-function abrirChamado() { /* mesmo código anterior */ 
+function abrirChamado() {
     const p = document.getElementById("patrimonioChamado").value.trim();
     const d = document.getElementById("descricaoChamado").value.trim();
     const f = document.getElementById("fotoChamado").files[0];
@@ -354,21 +357,48 @@ function abrirChamado() { /* mesmo código anterior */
     if (!p || !d) return alert("Número e descrição são obrigatórios!");
 
     const salvarChamado = (foto64) => {
-        chamados.push({ id: Date.now(), patrimonio: p, descricao: d, foto: foto64, status: "Aberto", tecnico: null, feedback: "", data: new Date().toLocaleString('pt-BR') });
+        chamados.push({ 
+            id: Date.now(), 
+            patrimonio: p, 
+            descricao: d, 
+            foto: foto64, 
+            status: "Aberto", 
+            tecnico: null, 
+            feedback: "", 
+            data: new Date().toLocaleString('pt-BR') 
+        });
         registrarAtividade(`Chamado aberto para ${p}`);
         salvar();
-        renderizarChamados();
+        
+        // ✅ Aplica o filtro atual (ex: 'Aberto') em vez de mostrar todos
+        if (typeof filtroChamadoAtual !== 'undefined') {
+            filtrarChamados(filtroChamadoAtual);
+        } else {
+            // Fallback: mostra apenas chamados 'Aberto'
+            filtrarChamados('Aberto');
+        }
+        
         alert("Chamado aberto!");
+        
+        // Limpa os campos
         document.getElementById("patrimonioChamado").value = "";
         document.getElementById("descricaoChamado").value = "";
         document.getElementById("fotoChamado").value = "";
+        
+        // Esconde a pré-visualização da foto
+        const previewDiv = document.getElementById("previewFoto");
+        if (previewDiv) previewDiv.style.display = "none";
+        const imgPreview = document.getElementById("imgPreview");
+        if (imgPreview) imgPreview.src = "#";
     };
 
     if (f) {
         const reader = new FileReader();
         reader.onload = e => salvarChamado(e.target.result);
         reader.readAsDataURL(f);
-    } else salvarChamado(null);
+    } else {
+        salvarChamado(null);
+    }
 }
 
 function previewFotoChamado() {
@@ -420,10 +450,10 @@ function aceitarChamado(id) {
     if (c) {
         c.status = "Em andamento";
         c.tecnico = usuarioLogado;
-        //registrarAtividade(`Aceito chamado ${c.patrimonio}`);
         salvar();
-        renderizarChamados();
-    } 
+        // Muda o filtro automaticamente para "Em andamento"
+        filtrarChamados('Em andamento');
+    }
 }
 
 function abrirModalFeedback(id) {
@@ -441,20 +471,30 @@ function abrirModalFeedback(id) {
 
 function concluirChamado(id, novoStatus) {
     const feedback = document.getElementById("feedbackTexto").value.trim();
-    if (!feedback) return alert("O feedback é obrigatório para qualquer conclusão!");
+    if (!feedback) return alert("O feedback é obrigatório!");
     const c = chamados.find(ch => ch.id === id);
     if (c) {
         c.status = novoStatus;
         c.feedback = feedback;
-        registrarAtividade(`Chamado ${novoStatus === 'Concluído' ? 'concluído com sucesso' : 'encerrado sem reparo'} para ${c.patrimonio}`);
+        registrarAtividade(`Chamado ${novoStatus === 'Concluído' ? 'concluído' : 'encerrado sem reparo'} para ${c.patrimonio}`);
         salvar();
         fecharModal();
-        renderizarChamados(); // recarrega a lista atual (ou a aba ativa)
+        // Muda o filtro para o status resultante
+        filtrarChamados(novoStatus);
     }
 }
 
 function filtrarChamados(status) {
+    filtroChamadoAtual = status;
     renderizarChamados(status === 'todos' ? null : status);
+    
+    // Atualiza a classe ativa nos botões (opcional, mas recomendado)
+    document.querySelectorAll('.filtro-chamado').forEach(btn => {
+        btn.classList.remove('ativo');
+        if (btn.innerText === status || (status === 'todos' && btn.innerText === 'Todos')) {
+            btn.classList.add('ativo');
+        }
+    });
 }
 
 function ampliarFoto(url) {

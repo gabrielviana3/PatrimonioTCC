@@ -35,51 +35,90 @@ window.onload = () => {
     });
 
     configurarNavegacaoEnter();
+
+    // ========== PREVIEW DA FOTO NO CHAMADO ==========
+    const fotoInput = document.getElementById("fotoChamado");
+    if (fotoInput) {
+        fotoInput.addEventListener("change", previewFotoChamado);
+    }
 };
 
-// ====================== NAVEGAÇÃO COM ENTER ======================
+
 function configurarNavegacaoEnter() {
     document.addEventListener('keydown', (e) => {
         if (e.key !== "Enter") return;
 
-        const ativo = document.activeElement;
+        const ativo = e.target;
+        const tag = ativo.tagName.toLowerCase();
 
-        // Navegação no Cadastro de Bem
-        if (!document.getElementById("cadastro").classList.contains("escondido")) {
-            const campos = ["numero", "nome", "valor", "notaFiscal", "fornecedor", "localizacao", "estado", "categoria"];
-            const indice = campos.indexOf(ativo.id);
-
-            if (indice > -1 && indice < campos.length - 1) {
-                e.preventDefault();
-                document.getElementById(campos[indice + 1]).focus();
-            } else if (indice === campos.length - 1) {
-                e.preventDefault();
-                cadastrarBem();
-            }
+        // Não interfere em textarea, botões, links
+        if (tag === 'textarea' || tag === 'button' || tag === 'a' || (tag === 'input' && ativo.type === 'submit')) {
+            return;
         }
 
-        // Login
-        if (document.getElementById("formLogin").style.display !== "none") {
-            if (ativo.id === "email") {
-                e.preventDefault();
-                document.getElementById("senha").focus();
-            } else if (ativo.id === "senha") {
-                e.preventDefault();
+        e.preventDefault(); // só para inputs e selects
+
+        // ---- LOGIN ----
+        if (!document.getElementById("loginTela").classList.contains("escondido")) {
+            const campos = ["email", "senha"];
+            const idx = campos.indexOf(ativo.id);
+            if (idx !== -1 && idx < campos.length - 1) {
+                document.getElementById(campos[idx+1]).focus();
+            } else if (idx === campos.length - 1) {
                 login();
             }
+            return;
         }
 
-        // Cadastro de Usuário
-        if (!document.getElementById("formCadastro").classList.contains("escondido")) {
-            const camposCadastro = ["nomeCadastro", "emailCadastro", "senhaCadastro", "roleCadastro"];
-            const indice = camposCadastro.indexOf(ativo.id);
-            if (indice > -1 && indice < camposCadastro.length - 1) {
-                e.preventDefault();
-                document.getElementById(camposCadastro[indice + 1]).focus();
-            } else if (indice === camposCadastro.length - 1) {
-                e.preventDefault();
-                cadastrarUsuario();
+        // ---- CADASTRO DE BEM ----
+        if (!document.getElementById("cadastro").classList.contains("escondido")) {
+            const campos = ["numero", "nome", "valor", "notaFiscal", "fornecedor", "localizacao", "estado", "categoria"];
+            const idx = campos.indexOf(ativo.id);
+            if (idx !== -1 && idx < campos.length - 1) {
+                document.getElementById(campos[idx+1]).focus();
+            } else if (idx === campos.length - 1) {
+                cadastrarBem();
             }
+            return;
+        }
+
+        // ---- INVENTÁRIO ----
+        if (!document.getElementById("bens").classList.contains("escondido")) {
+            const campos = ["buscaNumero", "buscaNome"];
+            const idx = campos.indexOf(ativo.id);
+            if (idx !== -1 && idx < campos.length - 1) {
+                document.getElementById(campos[idx+1]).focus();
+            } else if (idx === campos.length - 1) {
+                filtrarTudo();
+            }
+            return;
+        }
+
+        // ---- CHAMADOS ----
+        if (!document.getElementById("chamados").classList.contains("escondido")) {
+            const campos = ["patrimonioChamado", "descricaoChamado"];
+            const idx = campos.indexOf(ativo.id);
+            if (idx !== -1 && idx < campos.length - 1) {
+                document.getElementById(campos[idx+1]).focus();
+            } else if (idx === campos.length - 1) {
+                abrirChamado();
+            }
+            return;
+        }
+
+        // ---- RELATÓRIOS ----
+        if (!document.getElementById("relatorio").classList.contains("escondido")) {
+            const abaAtiva = document.querySelector('.conteudo-aba:not(.escondido)');
+            if (abaAtiva && abaAtiva.id === "abaItens") {
+                const campos = ["dataInicio", "dataFim", "filtroCategoriaPDF", "filtroEstadoPDF"];
+                const idx = campos.indexOf(ativo.id);
+                if (idx !== -1 && idx < campos.length - 1) {
+                    document.getElementById(campos[idx+1]).focus();
+                } else if (idx === campos.length - 1) {
+                    gerarRelatorioItens();
+                }
+            }
+            return;
         }
     });
 }
@@ -135,7 +174,7 @@ function login() {
         document.getElementById("loginTela").classList.add("escondido");
         document.getElementById("sistema").classList.remove("escondido");
         document.getElementById("usuarioInfo").innerText = `Olá, ${usuario.nome}`;
-        registrarAtividade(`Login realizado: ${usuario.nome}`);
+        //registrarAtividade(`Login realizado: ${usuario.nome}`);
         mostrarTela('dashboard');
     } else {
         alert("Email ou senha incorretos!");
@@ -161,6 +200,17 @@ function mostrarTela(id) {
         setTimeout(() => document.getElementById("numero").focus(), 100);
     }
     if (id === 'chamados') renderizarChamados();
+    
+    // NOVO: Quando a tela de relatório for aberta, verifica se a aba estatísticas está ativa
+    if (id === 'relatorio') {
+        // Pequeno delay para garantir que o DOM das abas foi atualizado
+        setTimeout(() => {
+            const abaEstatisticas = document.getElementById("abaEstatisticas");
+            if (abaEstatisticas && !abaEstatisticas.classList.contains("escondido")) {
+                atualizarEstatisticas();
+            }
+        }, 100);
+    }
 }
 
 // ====================== ATIVIDADES ======================
@@ -321,8 +371,27 @@ function abrirChamado() { /* mesmo código anterior */
     } else salvarChamado(null);
 }
 
+function previewFotoChamado() {
+    const input = document.getElementById("fotoChamado");
+    const previewDiv = document.getElementById("previewFoto");
+    const imgPreview = document.getElementById("imgPreview");
+
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            imgPreview.src = e.target.result;
+            previewDiv.style.display = "block";
+        };
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        previewDiv.style.display = "none";
+        imgPreview.src = "#";
+    }
+}
+
 function renderizarChamados(filtro = null) {
-    const container = document.getElementById("renderChamados");
+    const container = document.getElementById("listaChamados");
+
     let lista = filtro ? chamados.filter(c => c.status === filtro) : chamados;
 
     if (lista.length === 0) {
@@ -332,10 +401,10 @@ function renderizarChamados(filtro = null) {
 
     container.innerHTML = lista.map(c => `
         <div class="card-chamado">
-            <span class="badge" style="background:${c.status==='Concluído'?'#10b981':c.status==='Em andamento'?'#f59e0b':'#3b82f6'}">${c.status}</span>
+<span class="badge" style="background:${c.status === 'Concluído' ? '#10b981' : c.status === 'Em andamento' ? '#f59e0b' : c.status === 'Não reparado' ? '#ef4444' : '#3b82f6'}">${c.status}</span>
             <h4>Patrimônio: ${c.patrimonio}</h4>
             <p>${c.descricao}</p>
-            ${c.foto ? `<img src="${c.foto}" style="max-width:120px; border-radius:6px;">` : ''}
+            ${c.foto ? `<img src="${c.foto}" style="max-width:120px; border-radius:6px; cursor: pointer;" onclick="ampliarFoto('${c.foto}')">` : ''}
             ${c.feedback ? `<div class="feedback"><strong>Resolução:</strong> ${c.feedback}</div>` : ''}
             <div class="acoes-card">
                 ${c.status === 'Aberto' ? `<button onclick="aceitarChamado(${c.id})">Aceitar</button>` : ''}
@@ -351,33 +420,54 @@ function aceitarChamado(id) {
     if (c) {
         c.status = "Em andamento";
         c.tecnico = usuarioLogado;
-        registrarAtividade(`Aceito chamado ${c.patrimonio}`);
+        //registrarAtividade(`Aceito chamado ${c.patrimonio}`);
         salvar();
         renderizarChamados();
-    }
+    } 
 }
 
 function abrirModalFeedback(id) {
     document.getElementById("conteudoModal").innerHTML = `
         <h3>Finalizar Chamado</h3>
-        <textarea id="feedbackTexto" placeholder="Descreva o que foi feito..." rows="5" style="width:100%;"></textarea>
-        <button onclick="concluirChamado(${id})" style="width:100%; margin-top:10px; background:#10b981;">Concluir</button>
+        <textarea id="feedbackTexto" placeholder="Descreva o que foi feito..." rows="4" style="width:100%; margin-bottom:12px;"></textarea>
+        <div style="display:flex; gap:12px;">
+            <button onclick="concluirChamado(${id}, 'Concluído')" style="flex:1; background:#10b981;">✅ Sucesso</button>
+            <button onclick="concluirChamado(${id}, 'Não reparado')" style="flex:1; background:#ef4444;">❌ Falha</button>
+        </div>
+        <button onclick="fecharModal()" style="margin-top:12px; width:100%; background:#64748b;">Cancelar</button>
     `;
     document.getElementById("modalGeral").classList.remove("escondido");
 }
 
-function concluirChamado(id) {
+function concluirChamado(id, novoStatus) {
     const feedback = document.getElementById("feedbackTexto").value.trim();
-    if (!feedback) return alert("Feedback é obrigatório!");
+    if (!feedback) return alert("O feedback é obrigatório para qualquer conclusão!");
     const c = chamados.find(ch => ch.id === id);
     if (c) {
-        c.status = "Concluído";
+        c.status = novoStatus;
         c.feedback = feedback;
-        registrarAtividade(`Chamado concluído: ${c.patrimonio}`);
+        registrarAtividade(`Chamado ${novoStatus === 'Concluído' ? 'concluído com sucesso' : 'encerrado sem reparo'} para ${c.patrimonio}`);
         salvar();
         fecharModal();
-        renderizarChamados();
+        renderizarChamados(); // recarrega a lista atual (ou a aba ativa)
     }
+}
+
+function filtrarChamados(status) {
+    renderizarChamados(status === 'todos' ? null : status);
+}
+
+function ampliarFoto(url) {
+    const modal = document.getElementById("modalGeral");
+    const conteudo = document.getElementById("conteudoModal");
+    conteudo.innerHTML = `
+        <div style="text-align: center;">
+            <img src="${url}" style="max-width: 100%; max-height: 80vh; border-radius: 12px;">
+            <br><br>
+            <button onclick="fecharModal()" style="background: #2563eb;">Fechar</button>
+        </div>
+    `;
+    modal.classList.remove("escondido");
 }
 
 // ====================== RELATÓRIOS MELHORADOS ======================
@@ -475,10 +565,8 @@ function gerarPDFItens() {
 function mudarAbaRelatorio(e, id) {
     // Esconde todas as abas de conteúdo
     document.querySelectorAll('.conteudo-aba').forEach(a => a.classList.add('escondido'));
-    
     // Remove a classe ativa de todos os botões
     document.querySelectorAll('.aba-btn').forEach(b => b.classList.remove('ativa'));
-    
     // Mostra a aba selecionada
     document.getElementById(id).classList.remove('escondido');
     e.currentTarget.classList.add('ativa');
@@ -487,20 +575,14 @@ function mudarAbaRelatorio(e, id) {
     const filtros = document.getElementById("filtrosRelatorio");
     if (id === 'abaEstatisticas') {
         filtros.style.display = 'none';
+        atualizarEstatisticas(); // <-- CARREGA AUTOMATICAMENTE
     } else {
         filtros.style.display = 'flex';
     }
 
-    // === NOVA PARTE: Limpa a tabela de preview ao trocar de aba ===
-    if (id !== 'abaEstatisticas') {
-        // Limpa a tabela quando vai para Patrimônio, Chamados ou Atividades
-        document.getElementById("cabecalhoRelatorio").innerHTML = "";
-        document.getElementById("corpoRelatorio").innerHTML = "";
-    } else {
-        // Na aba Estatísticas, também limpamos para ficar limpo
-        document.getElementById("cabecalhoRelatorio").innerHTML = "";
-        document.getElementById("corpoRelatorio").innerHTML = "";
-    }
+    // Limpa a tabela de preview ao trocar de aba
+    document.getElementById("cabecalhoRelatorio").innerHTML = "";
+    document.getElementById("corpoRelatorio").innerHTML = "";
 }
 
 // Cabeçalho bonito para todos os PDFs

@@ -1,505 +1,253 @@
-:root { 
-    --p: #2563eb; 
-    --d: #0f172a; 
-    --bg: #f8fafc; 
-}
-
-body { 
-    margin: 0; 
-    font-family: 'Inter', sans-serif; 
-    background: var(--bg); 
-    color: #334155; 
-}
-
-.escondido { display: none !important; }
-
-/* Menu Lateral */
-.container { display: flex; height: 100vh; }
-.menu { width: 250px; background: var(--d); color: white; padding: 20px; display: flex; flex-direction: column; }
-.menu button { 
-    background: none; 
-    border: none; 
-    color: #94a3b8; 
-    padding: 12px; 
-    text-align: left; 
-    cursor: pointer; 
-    width: 100%; 
-    border-radius: 8px; 
-    margin: 4px 0;
-}
-.menu button:hover { background: #1e293b; color: white; }
-.btn-sair { margin-top: auto; color: #f87171 !important; }
-
-/* Telas e Conteúdo */
-.conteudo { flex: 1; padding: 30px; overflow-y: auto; }
-.tela { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-
-/* Cards Dashboard */
-.cards { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
-.card { 
-    flex: 1; 
-    min-width: 180px;
-    background: #fff; 
-    border: 1px solid #e2e8f0; 
-    padding: 20px; 
-    border-radius: 12px; 
-    text-align: center; 
-    cursor: pointer; 
-}
-.card span { 
-    font-size: 32px; 
-    font-weight: bold; 
-    color: var(--p); 
-    display: block; 
-}
-
-/* Atividades Log */
-.atividades-log { 
-    background: #f1f5f9; 
-    padding: 15px; 
-    border-radius: 10px; 
-    max-height: 540px;
-    overflow-y: auto; 
-}
-.log-item { 
-    border-bottom: 1px solid #e2e8f0; 
-    padding: 8px 0; 
-    font-size: 13px; 
-}
-
-/* Formulários */
-.formulario { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 10px; 
-    max-width: 420px; 
-}
-input, select, textarea { 
-    padding: 10px; 
-    border: 1px solid #e2e8f0; 
-    border-radius: 8px; 
-}
-
-/* Tabelas */
-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-th { text-align: left; background: #f1f5f9; padding: 12px; }
-td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
-
-/* Modal */
-.modal { 
-    position: fixed; top:0; left:0; width:100%; height:100%; 
-    background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index: 1000;
-}
-.modal-content { 
-    background:white; 
-    padding:30px; 
-    border-radius:12px; 
-    width:380px; 
-    position:relative; 
-    max-width: 90%;
-}
-.close { 
-    position:absolute; right:15px; top:10px; cursor:pointer; font-size:24px; 
-}
-
-/* Login */
-.login { 
-    height:100vh; 
-    display:flex; 
-    align-items:center; 
-    justify-content:center; 
-    background:var(--d); 
-}
-.login-box { 
-    background:white; 
-    padding:40px 30px; 
-    border-radius:16px; 
-    width:340px; 
-    display:flex; 
-    flex-direction:column; 
-    gap:12px; 
-    text-align:center; 
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-}
-
-.login-box button {
-    width: 100%;
-    max-width: 150px;          
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.login-box h3 { margin: 15px 0 20px 0; color: var(--d); }
-
-.link-cadastro {
-    text-align: center;
-    font-size: 14px;
-    margin-top: 10px;
-    color: #64748b;
-}
-.link-cadastro a {
-    color: var(--p);
-    text-decoration: underline;
-}
-
-.btn-secundario {
-    background: #64748b !important;
-}
-
-/* Abas */
-.abas { display: flex; gap: 10px; border-bottom: 2px solid #e2e8f0; margin-bottom: 20px; }
-.aba-btn { 
-    background:none; 
-    color:#64748b; 
-    border:none; 
-    padding:10px 15px; 
-    cursor:pointer; 
-    border-bottom: 3px solid transparent; 
-}
-.aba-btn.ativa { 
-    color:var(--p); 
-    border-bottom-color:var(--p); 
-    font-weight:bold; 
-}
-
-/* ==================== ESTILOS DOS CARDS DE CHAMADOS ==================== */
-
-.lista-cards-chamados {
-    margin-top: 20px;
-}
-
-.card-chamado {
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 16px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-    transition: all 0.2s ease;
-}
-
-.card-chamado:hover {
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
-}
-
-.card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-}
-
-.badge {
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 13px;
-    font-weight: 600;
-    color: white;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.badge.aberto { background: #3b82f6; }
-.badge.em-andamento { background: #f59e0b; }
-.badge.concluído { background: #10b981; }
-
-.card-chamado h4 {
-    margin: 8px 0 10px 0;
-    color: #1e2937;
-    font-size: 18px;
-}
-
-.descricao {
-    color: #475569;
-    line-height: 1.5;
-    margin-bottom: 12px;
-    font-size: 15px;
-}
-
-.foto-chamado {
-    max-width: 100%;
-    border-radius: 8px;
-    margin: 12px 0;
-    border: 1px solid #e2e8f0;
-}
-
-.feedback {
-    background: #f8fafc;
-    padding: 12px;
-    border-radius: 8px;
-    margin: 12px 0;
-    border-left: 4px solid #10b981;
-    font-size: 14.5px;
-}
-
-.acoes-card {
-    margin-top: 16px;
-    display: flex;
-    gap: 12px;
-}
-
-.acoes-card button {
-    flex: 1;
-    padding: 12px 16px;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.acoes-card button:hover {
-    transform: translateY(-1px);
-}
-
-.btn-aceitar {
-    background: #3b82f6;
-    color: white;
-}
-
-.btn-aceitar:hover {
-    background: #2563eb;
-}
-
-.btn-finalizar {
-    background: #10b981;
-    color: white;
-}
-
-.btn-finalizar:hover {
-    background: #059669;
-}
-
-/* Abas de Chamados */
-.abas-chamados {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin: 20px 0 15px 0;
-}
-
-.abas-chamados button {
-    padding: 10px 16px;
-    background: #f1f5f9;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-}
-
-.abas-chamados button:hover {
-    background: #e2e8f0;
-}
-
-/* --- NOVOS ESTILOS DE BOTÕES --- */
-
-/* Estilo Base para TODOS os botões do sistema */
-button {
-    cursor: pointer;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    font-family: 'Inter', sans-serif;
-    transition: all 0.2s ease-in-out;
-    padding: 10px 20px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-/* Botão Principal (Azul) - Aplica a quase todos */
-button:not(.btn-secundario, .btn-sair, .btn-pdf, .aba-btn, .abas-chamados button) {
-    background-color: var(--p);
-    color: white;
-    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1);
-}
-
-button:not(.btn-secundario, .btn-sair, .btn-pdf, .aba-btn, .abas-chamados button):hover {
-    background-color: #1d4ed8;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-}
-
-/* Botões de Ação dentro dos Cards de Chamados */
-.acoes-card button {
-    flex: 1;
-    font-size: 14px;
-}
-
-/* Botão de Finalizar/Concluir (Verde) */
-button[onclick*="concluir"], button[onclick*="abrirModalFeedback"], .btn-finalizar {
-    background-color: #10b981 !important;
-    color: white !important;
-}
-
-button[onclick*="concluir"]:hover, .btn-finalizar:hover {
-    background-color: #059669 !important;
-}
-
-/* Botão de Excluir ou Sair (Vermelho) */
-.btn-sair, button[onclick*="excluir"] {
-    background-color: #ef4444 !important;
-    color: white !important;
-}
-
-.btn-sair:hover, button[onclick*="excluir"]:hover {
-    background-color: #dc2626 !important;
-}
-
-/* Botão Secundário (Cinza) */
-.btn-secundario {
-    background-color: #64748b !important;
-    color: white !important;
-}
-
-/* Estilo para as Abas (Filtros de Chamados e Relatórios) */
-.aba-btn, .abas-chamados button {
-    background: #f1f5f9;
-    color: #64748b;
-    border-radius: 6px;
-    padding: 8px 16px;
-}
-
-.aba-btn.ativa, .abas-chamados button:hover {
-    background: var(--p);
-    color: white;
-}
-/* Itens do Menu Lateral */
-.menu nav button {
-    background: transparent;
-    color: #cbd5e1;
-    padding: 12px 15px;
-    margin-bottom: 5px;
-    justify-content: flex-start;
-}
-
-.menu nav button:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    padding-left: 20px; /* Efeito de deslize */
-}
-
-/* Abas de Chamados (Filtros) */
-.abas-chamados button {
-    background: #e2e8f0;
-    color: #475569;
-    font-size: 13px;
-    padding: 8px 16px;
-}
-
-.abas-chamados button:hover {
-    background: #cbd5e1;
-    color: #1e293b;
-}
-
-/* Itens do Menu Lateral */
-.menu nav button {
-    background: transparent;
-    color: #cbd5e1;
-    padding: 12px 15px;
-    margin-bottom: 5px;
-    justify-content: flex-start;
-}
-
-.menu nav button:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    padding-left: 20px; /* Efeito de deslize */
-}
-
-/* Abas de Chamados (Filtros) */
-.abas-chamados button {
-    background: #e2e8f0;
-    color: #475569;
-    font-size: 13px;
-    padding: 8px 16px;
-}
-
-.abas-chamados button:hover {
-    background: #cbd5e1;
-    color: #1e293b;
-}
-
-/* ====================== RESPONSIVIDADE - MENU MOBILE ====================== */
-
-.btn-hamburger {
-    display: none;
-    position: fixed;
-    top: 18px;
-    left: 18px;
-    z-index: 1100;
-    background: #2563eb;
-    color: white;
-    border: none;
-    width: 54px;
-    height: 54px;
-    font-size: 28px;
-    border-radius: 12px;
-    cursor: pointer;
-    box-shadow: 0 6px 16px rgba(0,0,0,0.25);
-    transition: all 0.2s;
-}
-
-.btn-hamburger:hover {
-    background: #1d4ed8;
-    transform: scale(1.05);
-}
-
-@media (max-width: 992px) {
-    .btn-hamburger {
-        display: block;
-    }
-
-    .menu {
-        position: fixed;
-        left: -290px;
-        top: 0;
-        height: 100vh;
-        width: 280px;
-        background: var(--d);
-        z-index: 1000;
-        transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 6px 0 25px rgba(0,0,0,0.35);
-        padding: 90px 20px 20px 20px;
-        overflow-y: auto;
-    }
-
-    .menu.open {
-        left: 0;
-    }
-
-    .conteudo {
-        padding-top: 80px;
-        padding-left: 16px;
-        padding-right: 16px;
-    }
-
-    /* Ajustes em telas pequenas */
-    .cards {
-        grid-template-columns: 1fr;
-        gap: 16px;
-    }
-
-    .formulario {
-        max-width: 100%;
-    }
-
-    .tela {
-        padding: 20px 16px;
-    }
-}
-
-/* Telas muito pequenas */
-@media (max-width: 480px) {
-    .menu {
-        width: 260px;
-    }
-    
-    .login-box {
-        width: 94%;
-        padding: 32px 24px;
-    }
-}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Patrimônio ISEPAM</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- Botão Hambúrguer para Mobile -->
+<button id="btnMenuMobile" class="btn-hamburger">☰</button>
+
+
+<div id="loginTela" class="login">
+    <div class="login-box">
+        <h2>ISEPAM</h2>
+        <p id="loginSubtitle">Gestor de bens patrimoniais</p>
+
+        <div id="formLogin">
+            <input type="email" id="email" placeholder="Email" autofocus>
+            <input type="password" id="senha" placeholder="Senha"
+            <br> 
+            <button onclick="login()">Entrar</button>
+            <p class="link-cadastro">
+                Não tem conta? <a href="#" onclick="mostrarTelaCadastro()">Criar cadastro</a>
+            </p>
+        </div>
+
+        <div id="formCadastro" class="escondido">
+            <h3>Criar Nova Conta</h3>
+            <input type="text" id="nomeCadastro" placeholder="Nome completo">
+            <input type="email" id="emailCadastro" placeholder="Email">
+            <input type="password" id="senhaCadastro" placeholder="Senha">
+            <select id="roleCadastro">
+                <option value="usuario">Usuário Comum</option>
+                <option value="tecnico">Técnico de Manutenção</option>
+                <option value="admin">Administrador</option>
+            </select>
+            <button onclick="cadastrarUsuario()">Cadastrar</button>
+            <button onclick="voltarParaLogin()" class="btn-secundario">Voltar para Login</button>
+        </div>
+    </div>
+</div>
+
+<div id="sistema" class="container escondido">
+    <aside class="menu">
+        <div class="menu-header">
+            <h2>Patrimônio</h2>
+            <p id="usuarioInfo"></p>
+        </div>
+        <nav>
+            <button onclick="mostrarTela('dashboard')">Dashboard</button>
+            <button onclick="mostrarTela('bens')">Inventário</button>
+            <button onclick="mostrarTela('cadastro')">Cadastrar</button>
+            <button onclick="mostrarTela('chamados')">Chamados</button>
+            <button onclick="mostrarTela('relatorio')">Relatórios</button>
+            <button onclick="logout()" class="btn-sair">Sair</button>
+        </nav>
+    </aside>
+
+    <main class="conteudo">
+
+        <!-- Dashboard -->
+        <section id="dashboard" class="tela">
+            <h2>Dashboard</h2>
+            <div class="cards">
+                <div class="card" onclick="mostrarTela('bens')"><span id="totalBens">0</span><p>Itens Totais</p></div>
+                <div class="card" onclick="mostrarTela('chamados')"><span id="totalChamados">0</span><p>Chamados Totais</p></div>
+                <div class="card warning" id="cardAndamento"><span id="emAndamento">0</span><p>Em Manutenção</p></div>
+            </div>
+            <h3>Atividades Recentes</h3>
+            <div id="listaAtividades" class="atividades-log"></div>
+        </section>
+
+        <!-- Inventário -->
+        <section id="bens" class="tela escondido">
+            <h2>Inventário de Bens</h2>
+            <div class="filtros-grid">
+                <input id="buscaNumero" placeholder="Filtrar por Nº" onkeyup="filtrarTudo()">
+                <input id="buscaNome" placeholder="Filtrar por Nome" onkeyup="filtrarTudo()">
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr><th>Nº</th><th>Nome</th><th>Valor</th><th>Local</th><th>Estado</th><th>Ações</th></tr>
+                    </thead>
+                    <tbody id="corpoTabela"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Cadastro -->
+        <section id="cadastro" class="tela escondido">
+            <h2>Novo Cadastro de Bem</h2>
+            <div class="formulario">
+                <label>Data de Entrada:</label>
+                <input id="dataCad" type="date">
+                <input id="numero" placeholder="Número do Patrimônio *" autofocus>
+                <input id="nome" placeholder="Nome do Item *">
+                <input id="valor" type="number" step="0.01" placeholder="Valor (R$) *">
+                <input id="notaFiscal" placeholder="Nota Fiscal">
+                <input id="fornecedor" placeholder="Fornecedor">
+                <input id="localizacao" placeholder="Localização Inicial">
+                <label>Estado de Conservação:</label>
+                <select id="estado">
+                    <option value="Novo" selected>Novo</option>
+                    <option value="Bom">Bom</option>
+                    <option value="Regular">Regular</option>
+                    <option value="Ruim">Ruim</option>
+                </select>
+                <select id="categoria">
+                    <option>Mobiliário</option>
+                    <option>TI</option>
+                    <option>Áudio e Vídeo</option>
+                </select>
+                <button onclick="cadastrarBem()">Salvar Bem</button>
+            </div>
+        </section>
+
+        <!-- Chamados - Corrigido -->
+        <section id="chamados" class="tela escondido">
+            <h2>Chamados de Manutenção</h2>
+
+            <!-- Formulário de abertura -->
+            <div class="formulario">
+                <input id="patrimonioChamado" placeholder="Nº do Patrimônio">
+                <input id="descricaoChamado" placeholder="Descrição do problema">
+                <label>Foto (Opcional):</label>
+                <input type="file" id="fotoChamado" accept="image/*" capture="camera">
+                <div id="previewFoto" style="margin: 8px 0; display: none;">
+                    <img id="imgPreview" src="#" alt="Pré-visualização" style="max-width: 150px; border-radius: 8px;">
+                </div>
+                <button onclick="abrirChamado()">Abrir Chamado</button>
+            </div>
+
+            <!-- Botões de filtro -->
+            <div class="abas-chamados">
+                <button onclick="filtrarChamados('todos')" class="filtro-chamado ativo">Todos</button>
+                <button onclick="filtrarChamados('Aberto')" class="filtro-chamado">Aberto</button>
+                <button onclick="filtrarChamados('Em andamento')" class="filtro-chamado">Em andamento</button>
+                <button onclick="filtrarChamados('Concluído')" class="filtro-chamado">Concluído</button>
+                <button onclick="filtrarChamados('Não reparado')" class="filtro-chamado">Não reparado</button>
+            </div>
+
+            <div id="listaChamados" class="lista-cards-chamados"></div>
+        </section>
+
+        <!-- RELATÓRIOS PDF -->
+        <section id="relatorio" class="tela escondido">
+            <div class="header-relatorio">
+                <h2>Relatórios</h2>
+                <div class="abas">
+                    <button class="aba-btn ativa" onclick="mudarAbaRelatorio(event, 'abaItens')">Patrimônio</button>
+                    <button class="aba-btn" onclick="mudarAbaRelatorio(event, 'abaChamados')">Chamados</button>
+                    <button class="aba-btn" onclick="mudarAbaRelatorio(event, 'abaAtividades')">Atividades</button>
+                    <button class="aba-btn" onclick="mudarAbaRelatorio(event, 'abaEstatisticas')">Estatísticas</button>
+                </div>
+            </div>
+
+            <!-- Filtros (visível apenas nas abas que precisam) -->
+            <div id="filtrosRelatorio" class="filtros-container">
+                <div class="campo-data">
+                    <label>De:</label> 
+                    <input type="date" id="dataInicio">
+                </div>
+                <div class="campo-data">
+                    <label>Até:</label> 
+                    <input type="date" id="dataFim">
+                </div>
+            </div>
+
+            <!-- Aba Patrimônio -->
+            <div id="abaItens" class="conteudo-aba">
+                <div style="display:flex; gap:10px; margin:15px 0; flex-wrap:wrap; align-items:center;">
+                    <select id="filtroCategoriaPDF">
+                        <option value="">Todas Categorias</option>
+                        <option>Mobiliário</option>
+                        <option>TI</option>
+                        <option>Áudio e Vídeo</option>
+                    </select>
+                    <select id="filtroEstadoPDF">
+                        <option value="">Todos Estados</option>
+                        <option>Novo</option>
+                        <option>Bom</option>
+                        <option>Regular</option>
+                        <option>Ruim</option>
+                    </select>
+                    <button onclick="gerarRelatorioItens()">Visualizar na Tela</button>
+                    <button onclick="gerarPDFItens()" class="btn-pdf">📄 Baixar PDF Patrimônio</button>
+                </div>
+            </div>
+
+            <!-- Aba Chamados -->
+            <div id="abaChamados" class="conteudo-aba escondido">
+                <button onclick="gerarRelatorioChamados()">Visualizar Chamados</button>
+                <button onclick="gerarPDFChamados()" class="btn-pdf">📄 Baixar PDF Chamados</button>
+            </div>
+
+            <!-- Aba Atividades -->
+            <div id="abaAtividades" class="conteudo-aba escondido">
+                <button onclick="gerarRelatorioAtividades()">Visualizar Logs</button>
+                <button onclick="gerarPDFAtividades()" class="btn-pdf">📄 Baixar PDF Atividades</button>
+            </div>
+
+            <!-- Aba Estatísticas -->
+            <div id="abaEstatisticas" class="conteudo-aba escondido">
+                <div class="cards" style="margin-top:20px; margin-bottom:30px;">
+                    <div class="card"><span id="valorTotalPatrimonio">R$ 0,00</span><p>Valor Total do Patrimônio</p></div>
+                    <div class="card"><span id="totalBensEstat">0</span><p>Itens Cadastrados</p></div>
+                </div>
+
+                <div style="display: flex; gap: 30px; flex-wrap: wrap; justify-content: center;">
+                    <!-- Gráfico de Categorias -->
+                    <div style="width: 380px;">
+                        <h3 style="text-align:center; margin-bottom:10px;">Distribuição por Categoria</h3>
+                        <canvas id="graficoCategoria" width="350" height="350"></canvas>
+                    </div>
+
+                    <!-- Gráfico de Estado de Conservação -->
+                    <div style="width: 380px;">
+                        <h3 style="text-align:center; margin-bottom:10px;">Estado de Conservação</h3>
+                        <canvas id="graficoEstado" width="350" height="350"></canvas>
+                    </div>
+                </div>
+
+                <button onclick="atualizarEstatisticas()" style="margin-top:30px; display:block; margin-left:auto; margin-right:auto;">
+                    Atualizar Estatísticas e Gráficos
+                </button>
+            </div>
+
+            <div class="preview-container">
+                <table id="tabelaRelatorio">
+                    <thead id="cabecalhoRelatorio"></thead>
+                    <tbody id="corpoRelatorio"></tbody>
+                </table>
+            </div>
+        </section>
+
+<div id="modalGeral" class="modal escondido">
+    <div class="modal-content">
+        <span class="close" onclick="fecharModal()">&times;</span>
+        <div id="conteudoModal"></div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

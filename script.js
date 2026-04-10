@@ -169,14 +169,49 @@ function login() {
     const senha = document.getElementById("senha").value;
 
     const usuario = usuarios.find(u => u.email === email && u.senha === senha);
+    
     if (usuario) {
         usuarioLogado = usuario.nome;
         usuarioRole = usuario.role;
+
+        // Esconde tela de login
         document.getElementById("loginTela").classList.add("escondido");
-        document.getElementById("sistema").classList.remove("escondido");
-        document.getElementById("usuarioInfo").innerText = `Olá, ${usuario.nome}`;
-        //registrarAtividade(`Login realizado: ${usuario.nome}`);
-        mostrarTela('dashboard');
+
+        // Mostra overlay de carregamento
+        let loading = document.getElementById("loadingOverlay");
+        if (!loading) {
+            loading = document.createElement("div");
+            loading.id = "loadingOverlay";
+            loading.className = "loading-overlay";
+            loading.innerHTML = `
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Carregando sistema...</div>
+                <div style="margin-top:10px; font-size:13px; opacity:0.7;">Bem-vindo, ${usuario.nome.split(' ')[0]}!</div>
+            `;
+            document.body.appendChild(loading);
+        }
+        loading.style.display = "flex";
+
+        // Simula carregamento + animação de entrada
+        setTimeout(() => {
+            document.getElementById("sistema").classList.remove("escondido");
+            
+            // Pequeno delay para a transição funcionar
+            setTimeout(() => {
+                document.getElementById("sistema").classList.add("show");
+            }, 50);
+
+            document.getElementById("usuarioInfo").innerText = `Olá, ${usuario.nome}`;
+            
+            loading.style.display = "none";
+            
+            // Mostra dashboard com animação suave
+            mostrarTela('dashboard');
+            
+            registrarAtividade(`Login realizado: ${usuario.nome}`);
+            
+        }, 1800); // 1.8 segundos de "carregamento"
+
     } else {
         alert("Email ou senha incorretos!");
     }

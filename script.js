@@ -862,7 +862,8 @@ let chartEstado = null;
 function atualizarEstatisticas() {
     const valorTotal = bens.reduce((acc, b) => acc + parseFloat(b.valor || 0), 0);
     
-    document.getElementById("valorTotalPatrimonio").innerText = `R$ ${valorTotal.toFixed(2)}`;
+    document.getElementById("valorTotalPatrimonio").innerText = 
+        valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     document.getElementById("totalBensEstat").innerText = bens.length;
 
     // Preparar dados por Categoria

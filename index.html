@@ -12,10 +12,13 @@
 </head>
 <body>
 
+<!-- Toast Container -->
+<div id="toastContainer" style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
+
 <!-- Botão Hambúrguer para Mobile -->
 <button id="btnMenuMobile" class="btn-hamburger">☰</button>
 
-
+<!-- Tela de Login -->
 <div id="loginTela" class="login">
     <div class="login-box">
         <h2>ISEPAM</h2>
@@ -23,8 +26,8 @@
 
         <div id="formLogin">
             <input type="email" id="email" placeholder="Email" autofocus>
-            <input type="password" id="senha" placeholder="Senha"
-            <br> 
+            <input type="password" id="senha" placeholder="Senha">
+            <br>
             <button onclick="login()">Entrar</button>
             <p class="link-cadastro">
                 Não tem conta? <a href="#" onclick="mostrarTelaCadastro()">Criar cadastro</a>
@@ -37,7 +40,6 @@
             <input type="email" id="emailCadastro" placeholder="Email">
             <input type="password" id="senhaCadastro" placeholder="Senha">
             <select id="roleCadastro">
-                <option value="usuario">Usuário Comum</option>
                 <option value="tecnico">Técnico de Manutenção</option>
                 <option value="admin">Administrador</option>
             </select>
@@ -47,6 +49,7 @@
     </div>
 </div>
 
+<!-- Sistema Principal -->
 <div id="sistema" class="container escondido">
     <aside class="menu">
         <div class="menu-header">
@@ -57,7 +60,7 @@
             <button onclick="mostrarTela('dashboard')">Dashboard</button>
             <button onclick="mostrarTela('bens')">Inventário</button>
             <button onclick="mostrarTela('cadastro')">Cadastrar</button>
-            <button onclick="mostrarTela('chamados')">Chamados</button>
+            <button onclick="mostrarTela('chamados', 'todos')">Chamados</button>
             <button onclick="mostrarTela('relatorio')">Relatórios</button>
             <button onclick="logout()" class="btn-sair">Sair</button>
         </nav>
@@ -70,7 +73,7 @@
             <h2>Dashboard</h2>
             <div class="cards">
                 <div class="card" onclick="mostrarTela('bens')"><span id="totalBens">0</span><p>Itens Totais</p></div>
-                <div class="card" onclick="mostrarTela('chamados')"><span id="totalChamados">0</span><p>Chamados Totais</p></div>
+                <div class="card" onclick="mostrarTela('chamados', 'todos')"><span id="totalChamados">0</span><p>Chamados Totais</p></div>
                 <div class="card warning" id="cardAndamento"><span id="emAndamento">0</span><p>Em Manutenção</p></div>
             </div>
             <h3>Atividades Recentes</h3>
@@ -122,11 +125,10 @@
             </div>
         </section>
 
-        <!-- Chamados - Corrigido -->
+        <!-- Chamados -->
         <section id="chamados" class="tela escondido">
             <h2>Chamados de Manutenção</h2>
 
-            <!-- Formulário de abertura -->
             <div class="formulario">
                 <input id="patrimonioChamado" placeholder="Nº do Patrimônio">
                 <input id="descricaoChamado" placeholder="Descrição do problema">
@@ -138,9 +140,8 @@
                 <button onclick="abrirChamado()">Abrir Chamado</button>
             </div>
 
-            <!-- Botões de filtro -->
             <div class="abas-chamados">
-                <button onclick="filtrarChamados('todos')" class="filtro-chamado ativo">Todos</button>
+                <button onclick="filtrarChamados('todos')" class="filtro-chamado">Todos</button>
                 <button onclick="filtrarChamados('Aberto')" class="filtro-chamado">Aberto</button>
                 <button onclick="filtrarChamados('Em andamento')" class="filtro-chamado">Em andamento</button>
                 <button onclick="filtrarChamados('Concluído')" class="filtro-chamado">Concluído</button>
@@ -150,7 +151,7 @@
             <div id="listaChamados" class="lista-cards-chamados"></div>
         </section>
 
-        <!-- RELATÓRIOS PDF -->
+        <!-- Relatórios -->
         <section id="relatorio" class="tela escondido">
             <div class="header-relatorio">
                 <h2>Relatórios</h2>
@@ -162,7 +163,6 @@
                 </div>
             </div>
 
-            <!-- Filtros (visível apenas nas abas que precisam) -->
             <div id="filtrosRelatorio" class="filtros-container">
                 <div class="campo-data">
                     <label>De:</label> 
@@ -174,7 +174,6 @@
                 </div>
             </div>
 
-            <!-- Aba Patrimônio -->
             <div id="abaItens" class="conteudo-aba">
                 <div style="display:flex; gap:10px; margin:15px 0; flex-wrap:wrap; align-items:center;">
                     <select id="filtroCategoriaPDF">
@@ -195,19 +194,24 @@
                 </div>
             </div>
 
-            <!-- Aba Chamados -->
             <div id="abaChamados" class="conteudo-aba escondido">
-                <button onclick="gerarRelatorioChamados()">Visualizar Chamados</button>
-                <button onclick="gerarPDFChamados()" class="btn-pdf">📄 Baixar PDF Chamados</button>
+                <div style="display:flex; gap:10px; margin:15px 0; flex-wrap:wrap; align-items:center;">
+                    <label>Filtrar por resultado:</label>
+                    <select id="filtroResultadoChamado">
+                        <option value="todos">Todos</option>
+                        <option value="Concluído">Concluídos</option>
+                        <option value="Não reparado">Não reparados</option>
+                    </select>
+                    <button onclick="gerarRelatorioChamados()">Visualizar Chamados</button>
+                    <button onclick="gerarPDFChamados()" class="btn-pdf">📄 Baixar PDF Chamados</button>
+                </div>
             </div>
 
-            <!-- Aba Atividades -->
             <div id="abaAtividades" class="conteudo-aba escondido">
                 <button onclick="gerarRelatorioAtividades()">Visualizar Logs</button>
                 <button onclick="gerarPDFAtividades()" class="btn-pdf">📄 Baixar PDF Atividades</button>
             </div>
 
-            <!-- Aba Estatísticas -->
             <div id="abaEstatisticas" class="conteudo-aba escondido">
                 <div class="cards" style="margin-top:20px; margin-bottom:30px;">
                     <div class="card"><span id="valorTotalPatrimonio">R$ 0,00</span><p>Valor Total do Patrimônio</p></div>
@@ -215,13 +219,10 @@
                 </div>
 
                 <div style="display: flex; gap: 30px; flex-wrap: wrap; justify-content: center;">
-                    <!-- Gráfico de Categorias -->
                     <div style="width: 380px;">
                         <h3 style="text-align:center; margin-bottom:10px;">Distribuição por Categoria</h3>
                         <canvas id="graficoCategoria" width="350" height="350"></canvas>
                     </div>
-
-                    <!-- Gráfico de Estado de Conservação -->
                     <div style="width: 380px;">
                         <h3 style="text-align:center; margin-bottom:10px;">Estado de Conservação</h3>
                         <canvas id="graficoEstado" width="350" height="350"></canvas>
@@ -241,11 +242,15 @@
             </div>
         </section>
 
-<div id="modalGeral" class="modal escondido">
-    <div class="modal-content">
-        <span class="close" onclick="fecharModal()">&times;</span>
-        <div id="conteudoModal"></div>
-    </div>
+        <!-- Modal Geral -->
+        <div id="modalGeral" class="modal escondido">
+            <div class="modal-content">
+                <span class="close" onclick="fecharModal()">&times;</span>
+                <div id="conteudoModal"></div>
+            </div>
+        </div>
+
+    </main>
 </div>
 
 <script src="script.js"></script>

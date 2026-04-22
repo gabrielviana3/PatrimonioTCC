@@ -1,15 +1,46 @@
 // ====================== DADOS ======================
 let bens = JSON.parse(localStorage.getItem("bens")) || [];
 let chamados = JSON.parse(localStorage.getItem("chamados")) || [];
-let filtroChamadoAtual = 'Todos';
+let filtroChamadoAtual = 'todos';
 let atividades = JSON.parse(localStorage.getItem("atividades")) || [];
 let usuarios = JSON.parse(localStorage.getItem("usuarios")) || [
     { id: 1, nome: "Administrador", email: "admin@isepam.edu.br", senha: "123", role: "admin" },
     { id: 2, nome: "Técnico", email: "tecnico@isepam.edu.br", senha: "123", role: "tecnico" }
 ];
 
+// Converte usuários antigos com role "usuario" para "tecnico"
+usuarios = usuarios.map(u => {
+    if (u.role === "usuario") return { ...u, role: "tecnico" };
+    return u;
+});
+localStorage.setItem("usuarios", JSON.stringify(usuarios));
+
 let usuarioLogado = "";
 let usuarioRole = "";
+
+// ====================== PERMISSÕES ======================
+function verificarPermissao(acao) {
+    if (usuarioRole === 'admin') return true;
+    if (usuarioRole === 'tecnico') {
+        const acoesPermitidas = [
+            'cadastrarBem', 'editarBem', 'abrirChamado', 'aceitarChamado',
+            'concluirChamado', 'excluirChamado', 'verRelatorios', 'verInventario'
+        ];
+        return acoesPermitidas.includes(acao);
+    }
+    return false;
+}
+
+// ====================== SEGURANÇA ======================
+function escapeHTML(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
 
 // ====================== SALVAR ======================
 function salvar() {
@@ -27,8 +58,7 @@ window.onload = () => {
     document.getElementById("dataCad").value = new Date().toISOString().split('T')[0];
     
     document.getElementById("cardAndamento").onclick = () => {
-        mostrarTela('chamados');
-        renderizarChamados('Em andamento');
+        mostrarTela('chamados', 'Em andamento');
     };
 
     document.addEventListener('keydown', (e) => {
@@ -37,13 +67,11 @@ window.onload = () => {
 
     configurarNavegacaoEnter();
 
-    // ========== PREVIEW DA FOTO NO CHAMADO ==========
     const fotoInput = document.getElementById("fotoChamado");
     if (fotoInput) {
         fotoInput.addEventListener("change", previewFotoChamado);
     }
 };
-
 
 function configurarNavegacaoEnter() {
     document.addEventListener('keydown', (e) => {
@@ -52,14 +80,12 @@ function configurarNavegacaoEnter() {
         const ativo = e.target;
         const tag = ativo.tagName.toLowerCase();
 
-        // Não interfere em textarea, botões, links
         if (tag === 'textarea' || tag === 'button' || tag === 'a' || (tag === 'input' && ativo.type === 'submit')) {
             return;
         }
 
-        e.preventDefault(); // só para inputs e selects
+        e.preventDefault();
 
-        // ---- LOGIN ----
         if (!document.getElementById("loginTela").classList.contains("escondido")) {
             const campos = ["email", "senha"];
             const idx = campos.indexOf(ativo.id);
@@ -71,7 +97,6 @@ function configurarNavegacaoEnter() {
             return;
         }
 
-        // ---- CADASTRO DE BEM ----
         if (!document.getElementById("cadastro").classList.contains("escondido")) {
             const campos = ["numero", "nome", "valor", "notaFiscal", "fornecedor", "localizacao", "estado", "categoria"];
             const idx = campos.indexOf(ativo.id);
@@ -83,7 +108,6 @@ function configurarNavegacaoEnter() {
             return;
         }
 
-        // ---- INVENTÁRIO ----
         if (!document.getElementById("bens").classList.contains("escondido")) {
             const campos = ["buscaNumero", "buscaNome"];
             const idx = campos.indexOf(ativo.id);
@@ -95,7 +119,6 @@ function configurarNavegacaoEnter() {
             return;
         }
 
-        // ---- CHAMADOS ----
         if (!document.getElementById("chamados").classList.contains("escondido")) {
             const campos = ["patrimonioChamado", "descricaoChamado"];
             const idx = campos.indexOf(ativo.id);
@@ -106,25 +129,10 @@ function configurarNavegacaoEnter() {
             }
             return;
         }
-
-        // ---- RELATÓRIOS ----
-        if (!document.getElementById("relatorio").classList.contains("escondido")) {
-            const abaAtiva = document.querySelector('.conteudo-aba:not(.escondido)');
-            if (abaAtiva && abaAtiva.id === "abaItens") {
-                const campos = ["dataInicio", "dataFim", "filtroCategoriaPDF", "filtroEstadoPDF"];
-                const idx = campos.indexOf(ativo.id);
-                if (idx !== -1 && idx < campos.length - 1) {
-                    document.getElementById(campos[idx+1]).focus();
-                } else if (idx === campos.length - 1) {
-                    gerarRelatorioItens();
-                }
-            }
-            return;
-        }
     });
 }
 
-// ====================== LOGIN E CADASTRO ======================
+// ====================== LOGIN ======================
 function mostrarTelaCadastro() {
     document.getElementById("formLogin").classList.add("escondido");
     document.getElementById("formCadastro").classList.remove("escondido");
@@ -148,17 +156,17 @@ function cadastrarUsuario() {
     const role = document.getElementById("roleCadastro").value;
 
     if (!nome || !email || !senha) {
-        alert("Preencha todos os campos obrigatórios!");
+        showToast("Preencha todos os campos obrigatórios!", "error");
         return;
     }
     if (usuarios.some(u => u.email === email)) {
-        alert("Este email já está cadastrado!");
+        showToast("Este email já está cadastrado!", "error");
         return;
     }
 
     usuarios.push({ id: Date.now(), nome, email, senha, role });
     salvarUsuarios();
-    alert("Conta criada com sucesso!");
+    showToast("Conta criada com sucesso!", "success");
     voltarParaLogin();
     document.getElementById("email").value = email;
     document.getElementById("senha").focus();
@@ -174,10 +182,8 @@ function login() {
         usuarioLogado = usuario.nome;
         usuarioRole = usuario.role;
 
-        // Esconde tela de login
         document.getElementById("loginTela").classList.add("escondido");
 
-        // Mostra overlay de carregamento
         let loading = document.getElementById("loadingOverlay");
         if (!loading) {
             loading = document.createElement("div");
@@ -186,34 +192,28 @@ function login() {
             loading.innerHTML = `
                 <div class="loading-spinner"></div>
                 <div class="loading-text">Carregando sistema...</div>
-                <div style="margin-top:10px; font-size:13px; opacity:0.7;">Bem-vindo, ${usuario.nome.split(' ')[0]}!</div>
+                <div style="margin-top:10px; font-size:13px; opacity:0.7;">Bem-vindo, ${escapeHTML(usuario.nome.split(' ')[0])}!</div>
             `;
             document.body.appendChild(loading);
         }
         loading.style.display = "flex";
 
-        // Simula carregamento + animação de entrada
         setTimeout(() => {
             document.getElementById("sistema").classList.remove("escondido");
-            
-            // Pequeno delay para a transição funcionar
             setTimeout(() => {
                 document.getElementById("sistema").classList.add("show");
             }, 50);
 
-            document.getElementById("usuarioInfo").innerText = `Olá, ${usuario.nome}`;
+            document.getElementById("usuarioInfo").innerHTML = `Olá, ${escapeHTML(usuario.nome)} (${usuarioRole === 'admin' ? 'Admin' : 'Técnico'})`;
             
             loading.style.display = "none";
             
-            // Mostra dashboard com animação suave
             mostrarTela('dashboard');
-            
-            registrarAtividade(`Login realizado: ${usuario.nome}`);
-            
-        }, 1800); // 1.8 segundos de "carregamento"
+            // Não registra mais login
+        }, 1800);
 
     } else {
-        alert("Email ou senha incorretos!");
+        showToast("Email ou senha incorretos!", "error");
     }
 }
 
@@ -222,7 +222,7 @@ function logout() {
 }
 
 // ====================== NAVEGAÇÃO ======================
-function mostrarTela(id) {
+function mostrarTela(id, filtroChamado = null) {
     document.querySelectorAll(".tela").forEach(t => t.classList.add("escondido"));
     const tela = document.getElementById(id);
     if (tela) tela.classList.remove("escondido");
@@ -236,12 +236,10 @@ function mostrarTela(id) {
         setTimeout(() => document.getElementById("numero").focus(), 100);
     }
     if (id === 'chamados') {
-    filtrarChamados('Aberto');  // mostra apenas chamados em aberto
+        const filtro = filtroChamado !== null ? filtroChamado : 'todos';
+        filtrarChamados(filtro);
     }
-    
-    // NOVO: Quando a tela de relatório for aberta, verifica se a aba estatísticas está ativa
     if (id === 'relatorio') {
-        // Pequeno delay para garantir que o DOM das abas foi atualizado
         setTimeout(() => {
             const abaEstatisticas = document.getElementById("abaEstatisticas");
             if (abaEstatisticas && !abaEstatisticas.classList.contains("escondido")) {
@@ -261,24 +259,30 @@ function registrarAtividade(msg) {
 
 function renderAtividades() {
     const container = document.getElementById("listaAtividades");
+    if (!container) return;
     container.innerHTML = atividades.length ? 
-        atividades.map(a => `<div class="log-item"><small>${a.data}</small><p>${a.texto}</p></div>`).join('') 
+        atividades.map(a => `<div class="log-item"><small>${escapeHTML(a.data)}</small><p>${escapeHTML(a.texto)}</p></div>`).join('') 
         : '<p style="color:#64748b; text-align:center;">Nenhuma atividade recente.</p>';
 }
 
-// ====================== CADASTRO DE BENS (COM NOVOS CAMPOS) ======================
+// ====================== CADASTRO DE BENS ======================
 function cadastrarBem() {
+    if (!verificarPermissao('cadastrarBem')) {
+        showToast("Você não tem permissão para cadastrar bens.", "error");
+        return;
+    }
+
     const numero = document.getElementById("numero").value.trim();
     const nome = document.getElementById("nome").value.trim();
     const valor = parseFloat(document.getElementById("valor").value) || 0;
 
     if (!numero || !nome || valor <= 0) {
-        alert("Número, Nome e Valor (R$) são obrigatórios!");
+        showToast("Número, Nome e Valor (R$ maior que zero) são obrigatórios!", "error");
         return;
     }
 
     if (bens.some(b => b.numero === numero)) {
-        alert("Já existe um bem com este número de patrimônio!");
+        showToast("Já existe um bem com este número de patrimônio!", "error");
         return;
     }
 
@@ -297,9 +301,8 @@ function cadastrarBem() {
     bens.push(novo);
     registrarAtividade(`Cadastrado: ${nome} (Nº ${numero}) - R$ ${valor.toFixed(2)}`);
     
-    alert("Bem cadastrado com sucesso!");
+    showToast("Bem cadastrado com sucesso!", "success");    
     
-    // Limpar formulário
     document.getElementById("numero").value = "";
     document.getElementById("nome").value = "";
     document.getElementById("valor").value = "";
@@ -324,12 +327,12 @@ function filtrarTudo() {
 
     document.getElementById("corpoTabela").innerHTML = filtrados.map(b => `
         <tr>
-            <td>${b.numero}</td>
-            <td>${b.nome}</td>
+            <td>${escapeHTML(b.numero)}</td>
+            <td>${escapeHTML(b.nome)}</td>
             <td>R$ ${parseFloat(b.valor).toFixed(2)}</td>
-            <td>${b.localizacao}</td>
-            <td>${b.estado}</td>
-            <td><button onclick="verFicha('${b.numero}')">Ver Ficha</button></td>
+            <td>${escapeHTML(b.localizacao)}</td>
+            <td>${escapeHTML(b.estado)}</td>
+            <td><button onclick="verFicha('${escapeHTML(b.numero)}')">Ver Ficha</button></td>
         </tr>
     `).join('');
 }
@@ -338,40 +341,90 @@ function verFicha(num) {
     const item = bens.find(b => b.numero === num);
     if (!item) return;
 
+    // Controle de visibilidade dos botões conforme permissão
+    const podeEditar = verificarPermissao('editarBem');
+    const podeExcluir = usuarioRole === 'admin'; // só admin exclui
+
     document.getElementById("conteudoModal").innerHTML = `
-        <h3>Ficha Técnica - ${item.nome}</h3>
-        <p><strong>Nº Patrimônio:</strong> ${item.numero}</p>
+        <h3>Ficha Técnica - ${escapeHTML(item.nome)}</h3>
+        <p><strong>Nº Patrimônio:</strong> ${escapeHTML(item.numero)}</p>
         <p><strong>Valor:</strong> R$ ${parseFloat(item.valor).toFixed(2)}</p>
-        <p><strong>Nota Fiscal:</strong> ${item.notaFiscal || 'Não informada'}</p>
-        <p><strong>Fornecedor:</strong> ${item.fornecedor || 'Não informado'}</p>
-        <p><strong>Data de Entrada:</strong> ${item.data}</p>
-        <p><strong>Localização:</strong> ${item.localizacao}</p>
-        <p><strong>Estado:</strong> ${item.estado}</p>
-        <p><strong>Categoria:</strong> ${item.categoria}</p>
-        <hr>
+        <p><strong>Localização:</strong> ${escapeHTML(item.localizacao)}</p>
+        <p><strong>Categoria:</strong> ${escapeHTML(item.categoria)}</p>
+        <p><strong>Data de Entrada:</strong> ${escapeHTML(item.data)}</p>
+
+        <label><strong>Estado de Conservação:</strong></label>
+        <select id="estadoAtual" style="width:100%; padding:10px; margin:8px 0; border-radius:8px;" ${!podeEditar ? 'disabled' : ''}>
+            <option value="Novo" ${item.estado === "Novo" ? "selected" : ""}>Novo</option>
+            <option value="Bom" ${item.estado === "Bom" ? "selected" : ""}>Bom</option>
+            <option value="Regular" ${item.estado === "Regular" ? "selected" : ""}>Regular</option>
+            <option value="Ruim" ${item.estado === "Ruim" ? "selected" : ""}>Ruim</option>
+        </select>
+
         <label>Nova Localização:</label>
-        <input id="novaLoc" value="${item.localizacao}" style="width:100%; margin:8px 0;">
-        <button onclick="salvarNovaLoc('${item.numero}')" style="width:100%; margin-bottom:8px;">Atualizar Localização</button>
-        <button onclick="excluirBem('${item.numero}')" style="width:100%; background:#ef4444; color:white;">Excluir Bem</button>
+        <input id="novaLoc" value="${escapeHTML(item.localizacao)}" style="width:100%; margin:8px 0; padding:10px;" ${!podeEditar ? 'disabled' : ''}>
+
+        <div style="margin-top: 20px; display: flex; gap: 10px; flex-direction: column;">
+            ${podeEditar ? `<button onclick="salvarAlteracoesFicha('${escapeHTML(item.numero)}')" style="background:#2563eb; color:white; padding:12px;">Salvar Alterações</button>` : ''}
+            ${podeExcluir ? `<button onclick="excluirBem('${escapeHTML(item.numero)}')" style="background:#ef4444; color:white; padding:12px;">Excluir Bem</button>` : ''}
+        </div>
     `;
+
     document.getElementById("modalGeral").classList.remove("escondido");
 }
 
-function salvarNovaLoc(num) {
+function salvarAlteracoesFicha(num) {
+    if (!verificarPermissao('editarBem')) {
+        showToast("Você não tem permissão para editar bens.", "error");
+        return;
+    }
+
     const item = bens.find(b => b.numero === num);
     if (!item) return;
-    const nova = document.getElementById("novaLoc").value.trim();
-    if (nova && nova !== item.localizacao) {
-        registrarAtividade(`Movimentação: ${item.nome} → ${nova}`);
-        item.localizacao = nova;
-        salvar();
-        alert("Localização atualizada!");
+
+    const novoEstado = document.getElementById("estadoAtual").value;
+    const novaLocalizacao = document.getElementById("novaLoc").value.trim();
+
+    let alterado = false;
+
+    if (novoEstado !== item.estado) {
+        item.estado = novoEstado;
+        registrarAtividade(`Estado alterado: ${item.nome} → ${novoEstado}`);
+        alterado = true;
     }
-    fecharModal();
-    filtrarTudo();
+
+    if (novaLocalizacao && novaLocalizacao !== item.localizacao) {
+        item.localizacao = novaLocalizacao;
+        registrarAtividade(`Localização alterada: ${item.nome} → ${novaLocalizacao}`);
+        alterado = true;
+    }
+
+    if (alterado) {
+        salvar();
+        showToast("Alterações salvas com sucesso!", "success");
+        fecharModal();
+        filtrarTudo();
+        atualizarDashboard();
+    } else {
+        showToast("Nenhuma alteração foi feita.", "info");
+    }
 }
 
 function excluirBem(num) {
+    if (usuarioRole !== 'admin') {
+        showToast("Apenas administradores podem excluir bens.", "error");
+        return;
+    }
+
+    const chamadosRelacionados = chamados.filter(c => c.patrimonio === num);
+    if (chamadosRelacionados.length > 0) {
+        const ok = confirm(`Este bem possui ${chamadosRelacionados.length} chamado(s). Excluir mesmo assim? Os chamados serão removidos.`);
+        if (!ok) return;
+        chamados = chamados.filter(c => c.patrimonio !== num);
+        registrarAtividade(`Chamados do bem ${num} removidos por exclusão do patrimônio.`);
+        salvar();
+    }
+
     if (!confirm("Tem certeza que deseja excluir este bem permanentemente?")) return;
 
     bens = bens.filter(b => b.numero !== num);
@@ -380,60 +433,91 @@ function excluirBem(num) {
     fecharModal();
     filtrarTudo();
     atualizarDashboard();
-    alert("Bem excluído com sucesso!");
+    showToast("Bem excluído com sucesso!", "success");
 }
 
-// ====================== CHAMADOS (mantido por enquanto) ======================
+// ====================== CHAMADOS ======================
 function abrirChamado() {
-    const p = document.getElementById("patrimonioChamado").value.trim();
-    const d = document.getElementById("descricaoChamado").value.trim();
-    const f = document.getElementById("fotoChamado").files[0];
+    const patrimonioNum = document.getElementById("patrimonioChamado").value.trim();
+    const descricao = document.getElementById("descricaoChamado").value.trim();
+    const fotoFile = document.getElementById("fotoChamado").files[0];
 
-    if (!p || !d) return alert("Número e descrição são obrigatórios!");
+    if (!patrimonioNum || !descricao) {
+        showToast("Número do patrimônio e descrição são obrigatórios!", "error");
+        return;
+    }
+
+    const bemExistente = bens.find(b => b.numero === patrimonioNum);
+    if (!bemExistente) {
+        showToast("Número de patrimônio não cadastrado no inventário!", "error");
+        return;
+    }
+
+    const chamadoAberto = chamados.find(c => c.patrimonio === patrimonioNum && c.status === "Aberto");
+    if (chamadoAberto) {
+        showToast(`Já existe um chamado em aberto para o patrimônio ${patrimonioNum}.`, "error");
+        return;
+    }
 
     const salvarChamado = (foto64) => {
         chamados.push({ 
             id: Date.now(), 
-            patrimonio: p, 
-            descricao: d, 
+            patrimonio: patrimonioNum, 
+            descricao: descricao, 
             foto: foto64, 
             status: "Aberto", 
             tecnico: null, 
             feedback: "", 
             data: new Date().toLocaleString('pt-BR') 
         });
-        registrarAtividade(`Chamado aberto para ${p}`);
+        registrarAtividade(`Chamado aberto para ${patrimonioNum} - ${bemExistente.nome}`);
         salvar();
         
-        // ✅ Aplica o filtro atual (ex: 'Aberto') em vez de mostrar todos
-        if (typeof filtroChamadoAtual !== 'undefined') {
-            filtrarChamados(filtroChamadoAtual);
-        } else {
-            // Fallback: mostra apenas chamados 'Aberto'
-            filtrarChamados('Aberto');
-        }
+        filtrarChamados('Aberto');
         
-        alert("Chamado aberto!");
+        showToast("Chamado aberto com sucesso!", "success");
         
-        // Limpa os campos
         document.getElementById("patrimonioChamado").value = "";
         document.getElementById("descricaoChamado").value = "";
         document.getElementById("fotoChamado").value = "";
         
-        // Esconde a pré-visualização da foto
         const previewDiv = document.getElementById("previewFoto");
         if (previewDiv) previewDiv.style.display = "none";
         const imgPreview = document.getElementById("imgPreview");
         if (imgPreview) imgPreview.src = "#";
     };
 
-    if (f) {
+    if (fotoFile) {
         const reader = new FileReader();
         reader.onload = e => salvarChamado(e.target.result);
-        reader.readAsDataURL(f);
+        reader.readAsDataURL(fotoFile);
     } else {
         salvarChamado(null);
     }
+}
+
+function excluirChamado(id) {
+    if (!verificarPermissao('excluirChamado')) {
+        showToast("Você não tem permissão para excluir chamados.", "error");
+        return;
+    }
+
+    const chamado = chamados.find(c => c.id === id);
+    if (!chamado) return;
+
+    if (chamado.status !== "Aberto") {
+        showToast("Apenas chamados em aberto podem ser excluídos.", "error");
+        return;
+    }
+
+    if (!confirm(`Tem certeza que deseja excluir o chamado do patrimônio ${chamado.patrimonio}?`)) return;
+
+    chamados = chamados.filter(c => c.id !== id);
+    registrarAtividade(`Chamado excluído: Patrimônio ${chamado.patrimonio}`);
+    salvar();
+    filtrarChamados(filtroChamadoAtual);
+    atualizarDashboard();
+    showToast("Chamado excluído com sucesso!", "success");
 }
 
 function previewFotoChamado() {
@@ -457,73 +541,153 @@ function previewFotoChamado() {
 function renderizarChamados(filtro = null) {
     const container = document.getElementById("listaChamados");
 
-    let lista = filtro ? chamados.filter(c => c.status === filtro) : chamados;
+    let lista = chamados;
+    if (filtro && filtro !== 'todos') {
+        lista = chamados.filter(c => c.status === filtro);
+    }
 
     if (lista.length === 0) {
         container.innerHTML = `<p style="color:#64748b; text-align:center; padding:30px;">Nenhum chamado encontrado.</p>`;
         return;
     }
 
+    const podeAceitarFinalizar = verificarPermissao('aceitarChamado');
+
     container.innerHTML = lista.map(c => `
         <div class="card-chamado">
-<span class="badge" style="background:${c.status === 'Concluído' ? '#10b981' : c.status === 'Em andamento' ? '#f59e0b' : c.status === 'Não reparado' ? '#ef4444' : '#3b82f6'}">${c.status}</span>
-            <h4>Patrimônio: ${c.patrimonio}</h4>
-            <p>${c.descricao}</p>
-            ${c.foto ? `<img src="${c.foto}" style="max-width:120px; border-radius:6px; cursor: pointer;" onclick="ampliarFoto('${c.foto}')">` : ''}
-            ${c.feedback ? `<div class="feedback"><strong>Resolução:</strong> ${c.feedback}</div>` : ''}
+            <span class="badge" style="background:${c.status === 'Concluído' ? '#10b981' : 
+                                           c.status === 'Em andamento' ? '#f59e0b' : 
+                                           c.status === 'Não reparado' ? '#ef4444' : '#3b82f6'}">
+                ${escapeHTML(c.status)}
+            </span>
+            
+            <h4>Patrimônio: ${escapeHTML(c.patrimonio)}</h4>
+            <p class="descricao">${escapeHTML(c.descricao)}</p>
+            
+            ${c.foto ? `<img src="${escapeHTML(c.foto)}" class="foto-chamado" onclick="ampliarFoto('${escapeHTML(c.foto)}')">` : ''}
+            
+            ${c.feedback ? `<div class="feedback"><strong>Resolução:</strong> ${escapeHTML(c.feedback)}</div>` : ''}
+
             <div class="acoes-card">
-                ${c.status === 'Aberto' ? `<button onclick="aceitarChamado(${c.id})">Aceitar</button>` : ''}
-                ${c.status === 'Em andamento' ? `<button onclick="abrirModalFeedback(${c.id})" style="background:#10b981;">Finalizar</button>` : ''}
+                ${c.status === 'Aberto' && podeAceitarFinalizar ? `
+                    <button onclick="aceitarChamado(${c.id})" class="btn-aceitar">Aceitar</button>
+                    <button onclick="excluirChamado(${c.id})" style="background:#ef4444; color:white;">🗑 Excluir</button>
+                ` : ''}
+
+                ${c.status === 'Em andamento' && podeAceitarFinalizar ? `
+                    <button onclick="abrirModalFeedback(${c.id})" class="btn-finalizar">Finalizar</button>
+                ` : ''}
             </div>
         </div>
     `).join('');
 }
 
-// Funções de chamados restantes (aceitar, finalizar, etc.) - mantidas simples por enquanto
 function aceitarChamado(id) {
+    if (!verificarPermissao('aceitarChamado')) {
+        showToast("Você não tem permissão para aceitar chamados.", "error");
+        return;
+    }
+
     const c = chamados.find(ch => ch.id === id);
-    if (c) {
+    if (c && c.status === "Aberto") {
         c.status = "Em andamento";
         c.tecnico = usuarioLogado;
         salvar();
-        // Muda o filtro automaticamente para "Em andamento"
-        filtrarChamados('Em andamento');
+        registrarAtividade(`Chamado do patrimônio ${c.patrimonio} aceito por ${usuarioLogado}`);
+        filtrarChamados(filtroChamadoAtual);
+        showToast("Chamado aceito e movido para 'Em andamento'.", "success");
     }
 }
 
 function abrirModalFeedback(id) {
+    if (!verificarPermissao('concluirChamado')) {
+        showToast("Você não tem permissão para finalizar chamados.", "error");
+        return;
+    }
+
+    const chamado = chamados.find(c => c.id === id);
+    if (!chamado) return;
+
+    const bem = bens.find(b => b.numero === chamado.patrimonio);
+
     document.getElementById("conteudoModal").innerHTML = `
-        <h3>Finalizar Chamado</h3>
-        <textarea id="feedbackTexto" placeholder="Descreva o que foi feito..." rows="4" style="width:100%; margin-bottom:12px;"></textarea>
-        <div style="display:flex; gap:12px;">
-            <button onclick="concluirChamado(${id}, 'Concluído')" style="flex:1; background:#10b981;">✅ Sucesso</button>
-            <button onclick="concluirChamado(${id}, 'Não reparado')" style="flex:1; background:#ef4444;">❌ Falha</button>
+        <h3>Finalizar Chamado - ${escapeHTML(chamado.patrimonio)}</h3>
+        <p><strong>Problema:</strong> ${escapeHTML(chamado.descricao)}</p>
+        
+        <textarea id="feedbackTexto" placeholder="Descreva o que foi feito ou o motivo da falha..." rows="4" style="width:100%; margin-bottom: 20px;"></textarea>
+
+        <label><strong>Novo Estado do Bem:</strong></label>
+        <select id="novoEstadoBem" style="width:100%; padding:12px; margin-bottom: 15px; border-radius:8px;">
+            <option value="Novo" ${bem && bem.estado === "Novo" ? "selected" : ""}>Novo</option>
+            <option value="Bom" ${bem && bem.estado === "Bom" ? "selected" : ""}>Bom</option>
+            <option value="Regular" ${bem && bem.estado === "Regular" ? "selected" : ""}>Regular</option>
+            <option value="Ruim" ${bem && bem.estado === "Ruim" ? "selected" : ""}>Ruim</option>
+        </select>
+
+        <label style="margin-top: 20px; display: block;"><strong>Resultado do Chamado:</strong></label>
+
+        <div style="display: flex; gap: 12px; margin-bottom: 25px;">
+            <button onclick="concluirChamado(${id}, 'Concluído')" 
+                    style="flex: 1; background: #10b981; color: white; padding: 16px 12px; font-size: 15.5px; font-weight: 600; border: none; border-radius: 10px; cursor: pointer;">
+                 Concluído com Sucesso
+            </button>
+            
+            <button onclick="concluirChamado(${id}, 'Não reparado')" 
+                    style="flex: 1; background: #ef4444; color: white; padding: 16px 12px; font-size: 15.5px; font-weight: 600; border: none; border-radius: 10px; cursor: pointer;">
+                Não foi possível reparar
+            </button>
         </div>
-        <button onclick="fecharModal()" style="margin-top:12px; width:100%; background:#64748b;">Cancelar</button>
+
+        <div style="display: flex; gap: 10px; flex-direction: column;">
+            <button onclick="fecharModal()" style="background: #64748b; color: white; padding: 14px; border-radius: 8px; border: none;">
+                Cancelar
+            </button>
+        </div>
     `;
+
     document.getElementById("modalGeral").classList.remove("escondido");
 }
 
 function concluirChamado(id, novoStatus) {
-    const feedback = document.getElementById("feedbackTexto").value.trim();
-    if (!feedback) return alert("O feedback é obrigatório!");
-    const c = chamados.find(ch => ch.id === id);
-    if (c) {
-        c.status = novoStatus;
-        c.feedback = feedback;
-        registrarAtividade(`Chamado ${novoStatus === 'Concluído' ? 'concluído' : 'encerrado sem reparo'} para ${c.patrimonio}`);
-        salvar();
-        fecharModal();
-        // Muda o filtro para o status resultante
-        filtrarChamados(novoStatus);
+    if (!verificarPermissao('concluirChamado')) {
+        showToast("Você não tem permissão para finalizar chamados.", "error");
+        return;
     }
+
+    const feedback = document.getElementById("feedbackTexto").value.trim();
+    if (!feedback) return showToast("O feedback é obrigatório!", "error");
+
+    const chamado = chamados.find(ch => ch.id === id);
+    if (!chamado) return;
+
+    const novoEstado = document.getElementById("novoEstadoBem") ? 
+                       document.getElementById("novoEstadoBem").value : null;
+
+    chamado.status = novoStatus;
+    chamado.feedback = feedback;
+    chamado.dataConclusao = new Date().toLocaleString('pt-BR');
+
+    if (novoEstado) {
+        const bem = bens.find(b => b.numero === chamado.patrimonio);
+        if (bem && novoEstado !== bem.estado) {
+            bem.estado = novoEstado;
+            registrarAtividade(`Chamado ${novoStatus.toLowerCase()}: ${bem.nome} → Estado alterado para ${novoEstado}`);
+        }
+    }
+
+    registrarAtividade(`Chamado ${novoStatus === 'Concluído' ? 'concluído' : 'encerrado sem reparo'} para ${chamado.patrimonio}`);
+
+    salvar();
+    fecharModal();
+    filtrarChamados(filtroChamadoAtual);
+    atualizarDashboard();
+    showToast(`Chamado ${novoStatus === 'Concluído' ? 'concluído' : 'encerrado'} com sucesso.`, "success");
 }
 
 function filtrarChamados(status) {
     filtroChamadoAtual = status;
     renderizarChamados(status === 'todos' ? null : status);
     
-    // Atualiza a classe ativa nos botões (opcional, mas recomendado)
     document.querySelectorAll('.filtro-chamado').forEach(btn => {
         btn.classList.remove('ativo');
         if (btn.innerText === status || (status === 'todos' && btn.innerText === 'Todos')) {
@@ -535,162 +699,44 @@ function filtrarChamados(status) {
 function ampliarFoto(url) {
     const modal = document.getElementById("modalGeral");
     const conteudo = document.getElementById("conteudoModal");
+    
     conteudo.innerHTML = `
-        <div style="text-align: center;">
-            <img src="${url}" style="max-width: 100%; max-height: 80vh; border-radius: 12px;">
+        <div style="text-align: center; background: transparent;">
+            <img src="${escapeHTML(url)}" style="max-width: 80vw; max-height: 80vh; width: auto; height: auto; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
             <br><br>
-            <button onclick="fecharModal()" style="background: #2563eb;">Fechar</button>
+            <button onclick="fecharModal()" style="background: #2563eb; color: white; border: none; padding: 10px 24px; border-radius: 30px; font-weight: bold; cursor: pointer;">Fechar</button>
         </div>
     `;
+    
+    const modalContent = document.querySelector('#modalGeral .modal-content');
+    if (modalContent) {
+        modalContent.style.background = 'rgba(0,0,0,0.85)';
+        modalContent.style.padding = '20px';
+        modalContent.style.maxWidth = '90vw';
+        modalContent.style.width = 'auto';
+        modalContent.style.boxShadow = 'none';
+        modalContent.style.borderRadius = '16px';
+    }
+    
     modal.classList.remove("escondido");
 }
 
-// ====================== RELATÓRIOS MELHORADOS ======================
-
-function gerarRelatorioItens() {
-    const ini = document.getElementById("dataInicio").value;
-    const fim = document.getElementById("dataFim").value;
-    const cat = document.getElementById("filtroCategoriaPDF").value;
-    const est = document.getElementById("filtroEstadoPDF").value;
-
-    let filtrados = bens.filter(b => {
-        const dataOk = (!ini || b.data >= ini) && (!fim || b.data <= fim);
-        const catOk = !cat || b.categoria === cat;
-        const estOk = !est || b.estado === est;
-        return dataOk && catOk && estOk;
-    });
-
-    // Cabeçalho
-    document.getElementById("cabecalhoRelatorio").innerHTML = `
-        <tr>
-            <th>Data</th>
-            <th>Nº Patrimônio</th>
-            <th>Nome</th>
-            <th>Categoria</th>
-            <th>Valor</th>
-            <th>Localização</th>
-            <th>Estado</th>
-        </tr>`;
-
-    // Corpo
-    let html = filtrados.map(b => `
-        <tr>
-            <td>${b.data}</td>
-            <td>${b.numero}</td>
-            <td>${b.nome}</td>
-            <td>${b.categoria}</td>
-            <td>R$ ${parseFloat(b.valor).toFixed(2)}</td>
-            <td>${b.localizacao}</td>
-            <td>${b.estado}</td>
-        </tr>
-    `).join('');
-
-    document.getElementById("corpoRelatorio").innerHTML = html || 
-        `<tr><td colspan="7" style="text-align:center; padding:40px; color:#64748b;">Nenhum bem encontrado com os filtros aplicados.</td></tr>`;
-}
-
-function gerarPDFItens() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    doc.setFontSize(18);
-    doc.text("Relatório de Patrimônio - ISEPAM", 20, 20);
+function fecharModal() {
+    const modal = document.getElementById("modalGeral");
+    modal.classList.add("escondido");
     
-    doc.setFontSize(11);
-    doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 20, 30);
-
-    // Tabela manual (melhor que texto solto)
-    let y = 45;
-    doc.setFontSize(10);
-
-    // Cabeçalho da tabela
-    doc.setFillColor(37, 99, 235);
-    doc.rect(20, y, 170, 8, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.text("Nº", 25, y+6);
-    doc.text("Nome do Bem", 45, y+6);
-    doc.text("Categoria", 110, y+6);
-    doc.text("Valor (R$)", 150, y+6);
-    y += 10;
-
-    doc.setTextColor(0);
-
-    bens.forEach((b, i) => {
-        if (y > 270) {
-            doc.addPage();
-            y = 20;
-        }
-        doc.text(b.numero, 25, y);
-        doc.text(b.nome.length > 35 ? b.nome.substring(0,32)+"..." : b.nome, 45, y);
-        doc.text(b.categoria, 110, y);
-        doc.text(parseFloat(b.valor).toFixed(2), 150, y);
-        y += 8;
-    });
-
-    // Total no final
-    const valorTotal = bens.reduce((sum, b) => sum + parseFloat(b.valor || 0), 0);
-    doc.setFontSize(12);
-    doc.text(`Valor Total do Patrimônio: R$ ${valorTotal.toFixed(2)}`, 20, y + 15);
-
-    doc.save("relatorio_patrimonio_isepam.pdf");
-}
-
-// ====================== RELATÓRIOS REFINADOS ======================
-
-function mudarAbaRelatorio(e, id) {
-    // Esconde todas as abas de conteúdo
-    document.querySelectorAll('.conteudo-aba').forEach(a => a.classList.add('escondido'));
-    // Remove a classe ativa de todos os botões
-    document.querySelectorAll('.aba-btn').forEach(b => b.classList.remove('ativa'));
-    // Mostra a aba selecionada
-    document.getElementById(id).classList.remove('escondido');
-    e.currentTarget.classList.add('ativa');
-
-    // Controla a visibilidade dos filtros de data
-    const filtros = document.getElementById("filtrosRelatorio");
-    if (id === 'abaEstatisticas') {
-        filtros.style.display = 'none';
-        atualizarEstatisticas(); // <-- CARREGA AUTOMATICAMENTE
-    } else {
-        filtros.style.display = 'flex';
-    }
-
-    // Limpa a tabela de preview ao trocar de aba
-    document.getElementById("cabecalhoRelatorio").innerHTML = "";
-    document.getElementById("corpoRelatorio").innerHTML = "";
-}
-
-// Cabeçalho bonito para todos os PDFs
-function adicionarCabecalhoPDF(doc, titulo) {
-    doc.setFillColor(37, 99, 235); // Cor azul principal
-    doc.rect(0, 0, 210, 35, 'F');
-    
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(18);
-    doc.text("ISEPAM", 20, 18);
-    doc.setFontSize(14);
-    doc.text("Sistema de Gestão de Patrimônio", 20, 26);
-    
-    doc.setFontSize(16);
-    doc.text(titulo, 20, 33);
-    
-    doc.setTextColor(0);
-    doc.setFontSize(10);
-    doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}`, 20, 45);
-}
-
-// Rodapé com número da página
-function adicionarRodapePDF(doc) {
-    const pageCount = doc.internal.getNumberOfPages();
-    doc.setFontSize(9);
-    doc.setTextColor(100);
-    for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.text(`Página ${i} de ${pageCount} • ISEPAM - Patrimônio`, 105, 290, { align: 'center' });
+    const modalContent = document.querySelector('#modalGeral .modal-content');
+    if (modalContent) {
+        modalContent.style.background = '';
+        modalContent.style.padding = '';
+        modalContent.style.maxWidth = '';
+        modalContent.style.width = '';
+        modalContent.style.boxShadow = '';
+        modalContent.style.borderRadius = '';
     }
 }
 
-// ====================== ABA PATRIMÔNIO ======================
+// ====================== RELATÓRIOS ======================
 function gerarRelatorioItens() {
     const ini = document.getElementById("dataInicio").value;
     const fim = document.getElementById("dataFim").value;
@@ -705,7 +751,7 @@ function gerarRelatorioItens() {
     });
 
     document.getElementById("cabecalhoRelatorio").innerHTML = `
-        <tr>
+        <table>
             <th>Data Entrada</th>
             <th>Nº Patrimônio</th>
             <th>Nome do Item</th>
@@ -717,18 +763,18 @@ function gerarRelatorioItens() {
 
     let html = filtrados.map(b => `
         <tr>
-            <td>${b.data}</td>
-            <td>${b.numero}</td>
-            <td>${b.nome}</td>
-            <td>${b.categoria}</td>
+            <td>${escapeHTML(b.data)}</td>
+            <td>${escapeHTML(b.numero)}</td>
+            <td>${escapeHTML(b.nome)}</td>
+            <td>${escapeHTML(b.categoria)}</td>
             <td>R$ ${parseFloat(b.valor).toFixed(2)}</td>
-            <td>${b.localizacao}</td>
-            <td>${b.estado}</td>
+            <td>${escapeHTML(b.localizacao)}</td>
+            <td>${escapeHTML(b.estado)}</td>
         </tr>
     `).join('');
 
     document.getElementById("corpoRelatorio").innerHTML = html || 
-        `<tr><td colspan="7" style="text-align:center; padding:50px; color:#64748b;">Nenhum bem encontrado com os filtros aplicados.</td></tr>`;
+        `<tr><td colspan="7" style="text-align:center; padding:50px; color:#64748b;">Nenhum bem encontrado.</td></tr>`;
 }
 
 function gerarPDFItens() {
@@ -737,13 +783,24 @@ function gerarPDFItens() {
 
     adicionarCabecalhoPDF(doc, "Relatório de Patrimônio");
 
-    const valorTotal = bens.reduce((acc, b) => acc + parseFloat(b.valor || 0), 0);
+    const ini = document.getElementById("dataInicio").value;
+    const fim = document.getElementById("dataFim").value;
+    const cat = document.getElementById("filtroCategoriaPDF").value;
+    const est = document.getElementById("filtroEstadoPDF").value;
+
+    let filtrados = bens.filter(b => {
+        const dataOk = (!ini || b.data >= ini) && (!fim || b.data <= fim);
+        const catOk = !cat || b.categoria === cat;
+        const estOk = !est || b.estado === est;
+        return dataOk && catOk && estOk;
+    });
+
+    const valorTotal = filtrados.reduce((acc, b) => acc + parseFloat(b.valor || 0), 0);
 
     doc.setFontSize(12);
-    doc.text(`Total de Bens: ${bens.length}   |   Valor Total do Patrimônio: R$ ${valorTotal.toFixed(2)}`, 20, 55);
+    doc.text(`Total de Bens (filtrados): ${filtrados.length}   |   Valor Total: R$ ${valorTotal.toFixed(2)}`, 20, 55);
 
-    // Preparar dados da tabela
-    const tabela = bens.map(b => [
+    const tabela = filtrados.map(b => [
         b.data,
         b.numero,
         b.nome.length > 38 ? b.nome.substring(0, 35) + "..." : b.nome,
@@ -768,31 +825,92 @@ function gerarPDFItens() {
     doc.save("relatorio_patrimonio_isepam.pdf");
 }
 
-// ====================== ABA CHAMADOS ======================
+function mudarAbaRelatorio(e, id) {
+    document.querySelectorAll('.conteudo-aba').forEach(a => a.classList.add('escondido'));
+    document.querySelectorAll('.aba-btn').forEach(b => b.classList.remove('ativa'));
+    document.getElementById(id).classList.remove('escondido');
+    e.currentTarget.classList.add('ativa');
+
+    const filtros = document.getElementById("filtrosRelatorio");
+    if (id === 'abaEstatisticas') {
+        filtros.style.display = 'none';
+        atualizarEstatisticas();
+    } else {
+        filtros.style.display = 'flex';
+    }
+
+    document.getElementById("cabecalhoRelatorio").innerHTML = "";
+    document.getElementById("corpoRelatorio").innerHTML = "";
+}
+
+function adicionarCabecalhoPDF(doc, titulo) {
+    doc.setFillColor(37, 99, 235);
+    doc.rect(0, 0, 210, 35, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.text("ISEPAM", 20, 18);
+    doc.setFontSize(14);
+    doc.text("Sistema de Gestão de Patrimônio", 20, 26);
+    doc.setFontSize(16);
+    doc.text(titulo, 20, 33);
+    doc.setTextColor(0);
+    doc.setFontSize(10);
+    doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}`, 20, 45);
+}
+
+function adicionarRodapePDF(doc) {
+    const pageCount = doc.internal.getNumberOfPages();
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.text(`Página ${i} de ${pageCount} • ISEPAM - Patrimônio`, 105, 290, { align: 'center' });
+    }
+}
+
 function gerarRelatorioChamados() {
+    const ini = document.getElementById("dataInicio").value;
+    const fim = document.getElementById("dataFim").value;
+    const filtroResultado = document.getElementById("filtroResultadoChamado").value;
+
+    let filtrados = chamados.filter(c => {
+        const dataChamado = c.data.split(' ')[0];
+        const [dia, mes, ano] = dataChamado.split('/');
+        const dataISO = `${ano}-${mes}-${dia}`;
+        const dataOk = (!ini || dataISO >= ini) && (!fim || dataISO <= fim);
+        
+        let resultadoOk = true;
+        if (filtroResultado === 'Concluído') {
+            resultadoOk = c.status === 'Concluído';
+        } else if (filtroResultado === 'Não reparado') {
+            resultadoOk = c.status === 'Não reparado';
+        }
+        return dataOk && resultadoOk;
+    });
+
     document.getElementById("cabecalhoRelatorio").innerHTML = `
-        <tr>
+        <table>
             <th>Data</th>
             <th>Patrimônio</th>
             <th>Descrição</th>
             <th>Status</th>
             <th>Técnico</th>
             <th>Resolução</th>
-        </tr>`;
+        </table>`;
 
-    const html = chamados.map(c => `
+    const html = filtrados.map(c => `
         <tr>
-            <td>${c.data}</td>
-            <td>${c.patrimonio}</td>
-            <td>${c.descricao.length > 60 ? c.descricao.substring(0,57) + '...' : c.descricao}</td>
-            <td>${c.status}</td>
-            <td>${c.tecnico || '—'}</td>
-            <td>${c.feedback ? 'Sim' : '—'}</td>
+            <td>${escapeHTML(c.data)}</td>
+            <td>${escapeHTML(c.patrimonio)}</td>
+            <td>${escapeHTML(c.descricao.length > 60 ? c.descricao.substring(0,57) + '...' : c.descricao)}</td>
+            <td>${escapeHTML(c.status)}</td>
+            <td>${escapeHTML(c.tecnico || '—')}</td>
+            <td>${c.feedback ? escapeHTML(c.feedback.substring(0, 50)) : '—'}</td>
         </tr>
     `).join('');
 
     document.getElementById("corpoRelatorio").innerHTML = html || 
-        `<tr><td colspan="6" style="text-align:center; padding:50px; color:#64748b;">Nenhum chamado registrado ainda.</td></tr>`;
+        `<tr><td colspan="6" style="text-align:center; padding:50px; color:#64748b;">Nenhum chamado encontrado.</td></tr>`;
 }
 
 function gerarPDFChamados() {
@@ -801,18 +919,37 @@ function gerarPDFChamados() {
 
     adicionarCabecalhoPDF(doc, "Relatório de Chamados de Manutenção");
 
-    const tabela = chamados.map(c => [
+    const ini = document.getElementById("dataInicio").value;
+    const fim = document.getElementById("dataFim").value;
+    const filtroResultado = document.getElementById("filtroResultadoChamado").value;
+
+    let filtrados = chamados.filter(c => {
+        const dataChamado = c.data.split(' ')[0];
+        const [dia, mes, ano] = dataChamado.split('/');
+        const dataISO = `${ano}-${mes}-${dia}`;
+        const dataOk = (!ini || dataISO >= ini) && (!fim || dataISO <= fim);
+        
+        let resultadoOk = true;
+        if (filtroResultado === 'Concluído') {
+            resultadoOk = c.status === 'Concluído';
+        } else if (filtroResultado === 'Não reparado') {
+            resultadoOk = c.status === 'Não reparado';
+        }
+        return dataOk && resultadoOk;
+    });
+
+    const tabela = filtrados.map(c => [
         c.data,
         c.patrimonio,
         c.descricao.length > 45 ? c.descricao.substring(0,42) + "..." : c.descricao,
         c.status,
         c.tecnico || "—",
-        c.feedback ? "Concluído" : "Pendente"
+        c.feedback ? (c.feedback.length > 40 ? c.feedback.substring(0,37) + "..." : c.feedback) : "—"
     ]);
 
     doc.autoTable({
         startY: 55,
-        head: [['Data', 'Patrimônio', 'Problema', 'Status', 'Técnico', 'Situação']],
+        head: [['Data', 'Patrimônio', 'Problema', 'Status', 'Técnico', 'Resolução']],
         body: tabela,
         theme: 'striped',
         styles: { fontSize: 9 },
@@ -823,16 +960,28 @@ function gerarPDFChamados() {
     doc.save("relatorio_chamados_isepam.pdf");
 }
 
-// ====================== ABA ATIVIDADES ======================
 function gerarRelatorioAtividades() {
-    document.getElementById("cabecalhoRelatorio").innerHTML = `<tr><th>Data e Hora</th><th>Atividade Registrada</th></tr>`;
+    const ini = document.getElementById("dataInicio").value;
+    const fim = document.getElementById("dataFim").value;
+
+    let filtrados = atividades.filter(a => {
+        const dataAtividade = a.data.split(' ')[0];
+        const [dia, mes, ano] = dataAtividade.split('/');
+        const dataISO = `${ano}-${mes}-${dia}`;
+        return (!ini || dataISO >= ini) && (!fim || dataISO <= fim);
+    });
+
+    document.getElementById("cabecalhoRelatorio").innerHTML = `<table><th>Data e Hora</th><th>Atividade Registrada</th></tr>`;
     
-    const html = atividades.map(a => `
-        <tr><td>${a.data}</td><td>${a.texto}</td></tr>
+    const html = filtrados.map(a => `
+        <tr>
+            <td>${escapeHTML(a.data)}</td>
+            <td>${escapeHTML(a.texto)}</td>
+        </tr>
     `).join('');
 
     document.getElementById("corpoRelatorio").innerHTML = html || 
-        `<tr><td colspan="2" style="text-align:center; padding:50px; color:#64748b;">Nenhuma atividade registrada.</td></tr>`;
+        `<tr><td colspan="2" style="text-align:center; padding:50px; color:#64748b;">Nenhuma atividade encontrada.</td></tr>`;
 }
 
 function gerarPDFAtividades() {
@@ -841,7 +990,17 @@ function gerarPDFAtividades() {
 
     adicionarCabecalhoPDF(doc, "Log de Atividades do Sistema");
 
-    const tabela = atividades.map(a => [a.data, a.texto]);
+    const ini = document.getElementById("dataInicio").value;
+    const fim = document.getElementById("dataFim").value;
+
+    let filtrados = atividades.filter(a => {
+        const dataAtividade = a.data.split(' ')[0];
+        const [dia, mes, ano] = dataAtividade.split('/');
+        const dataISO = `${ano}-${mes}-${dia}`;
+        return (!ini || dataISO >= ini) && (!fim || dataISO <= fim);
+    });
+
+    const tabela = filtrados.map(a => [a.data, a.texto]);
 
     doc.autoTable({
         startY: 55,
@@ -855,7 +1014,7 @@ function gerarPDFAtividades() {
     doc.save("relatorio_atividades_isepam.pdf");
 }
 
-// ====================== ABA ESTATÍSTICAS ======================
+// ====================== ESTATÍSTICAS ======================
 let chartCategoria = null;
 let chartEstado = null;
 
@@ -866,7 +1025,6 @@ function atualizarEstatisticas() {
         valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     document.getElementById("totalBensEstat").innerText = bens.length;
 
-    // Preparar dados por Categoria
     const porCategoria = {};
     bens.forEach(b => {
         porCategoria[b.categoria] = (porCategoria[b.categoria] || 0) + 1;
@@ -876,7 +1034,6 @@ function atualizarEstatisticas() {
     const dataCat = Object.values(porCategoria);
     const coresCat = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
 
-    // Preparar dados por Estado
     const porEstado = {};
     bens.forEach(b => {
         porEstado[b.estado] = (porEstado[b.estado] || 0) + 1;
@@ -886,14 +1043,12 @@ function atualizarEstatisticas() {
     const dataEst = Object.values(porEstado);
     const coresEst = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
 
-    // Destruir gráficos antigos se existirem (evita erro ao atualizar)
     if (chartCategoria) chartCategoria.destroy();
     if (chartEstado) chartEstado.destroy();
 
-    // Criar Gráfico de Categoria (Pizza)
     const ctxCat = document.getElementById('graficoCategoria').getContext('2d');
     chartCategoria = new Chart(ctxCat, {
-        type: 'doughnut',   // ou 'pie' se preferir
+        type: 'doughnut',
         data: {
             labels: labelsCat,
             datasets: [{
@@ -916,7 +1071,6 @@ function atualizarEstatisticas() {
         }
     });
 
-    // Criar Gráfico de Estado (Pizza)
     const ctxEst = document.getElementById('graficoEstado').getContext('2d');
     chartEstado = new Chart(ctxEst, {
         type: 'doughnut',
@@ -943,34 +1097,25 @@ function atualizarEstatisticas() {
     });
 }
 
-// ====================== UTILITÁRIOS ======================
+// ====================== DASHBOARD ======================
 function atualizarDashboard() {
     document.getElementById("totalBens").innerText = bens.length;
     document.getElementById("totalChamados").innerText = chamados.length;
     document.getElementById("emAndamento").innerText = chamados.filter(c => c.status === "Em andamento").length;
 }
 
-function fecharModal() {
-    document.getElementById("modalGeral").classList.add("escondido");
-}   
-
-// ====================== RESPONSIVIDADE - MENU MOBILE (VERSÃO MELHORADA) ======================
+// ====================== MENU MOBILE ======================
 function initMobileMenu() {
     const btnMenu = document.getElementById('btnMenuMobile');
     const menu = document.querySelector('.menu');
 
-    if (!btnMenu || !menu) {
-        console.warn("Elemento do menu mobile não encontrado");
-        return;
-    }
+    if (!btnMenu || !menu) return;
 
-    // Toggle do menu
     btnMenu.addEventListener('click', (e) => {
         e.stopPropagation();
         menu.classList.toggle('open');
     });
 
-    // Fechar ao clicar em um item do menu
     document.querySelectorAll('.menu button').forEach(btn => {
         btn.addEventListener('click', () => {
             if (window.innerWidth <= 992) {
@@ -979,7 +1124,6 @@ function initMobileMenu() {
         });
     });
 
-    // Fechar ao clicar fora do menu
     document.addEventListener('click', (e) => {
         if (window.innerWidth <= 992 && 
             !menu.contains(e.target) && 
@@ -988,7 +1132,6 @@ function initMobileMenu() {
         }
     });
 
-    // Fechar automaticamente ao redimensionar para desktop
     window.addEventListener('resize', () => {
         if (window.innerWidth > 992) {
             menu.classList.remove('open');
@@ -996,5 +1139,27 @@ function initMobileMenu() {
     });
 }
 
-// Executa quando o DOM estiver totalmente carregado
 document.addEventListener('DOMContentLoaded', initMobileMenu);
+
+// ====================== TOAST ======================
+function showToast(mensagem, tipo = "success") {
+    const container = document.getElementById("toastContainer");
+    
+    const toast = document.createElement("div");
+    toast.className = `toast ${tipo}`;
+    
+    let icone = "";
+    if (tipo === "success") icone = "✅";
+    else if (tipo === "error") icone = "❌";
+    else if (tipo === "info") icone = "ℹ️";
+
+    toast.innerHTML = `<span>${icone}</span><span>${escapeHTML(mensagem)}</span>`;
+    container.appendChild(toast);
+
+    setTimeout(() => toast.classList.add("show"), 10);
+
+    setTimeout(() => {
+        toast.style.opacity = "0";
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}

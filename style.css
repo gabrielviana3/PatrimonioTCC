@@ -162,8 +162,7 @@ td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
     font-weight:bold; 
 }
 
-/* ==================== ESTILOS DOS CARDS DE CHAMADOS ==================== */
-
+/* Cards de Chamados */
 .lista-cards-chamados {
     margin-top: 20px;
 }
@@ -183,13 +182,6 @@ td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
     transform: translateY(-2px);
 }
 
-.card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-}
-
 .badge {
     padding: 6px 14px;
     border-radius: 20px;
@@ -199,10 +191,6 @@ td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-
-.badge.aberto { background: #3b82f6; }
-.badge.em-andamento { background: #f59e0b; }
-.badge.concluído { background: #10b981; }
 
 .card-chamado h4 {
     margin: 8px 0 10px 0;
@@ -215,13 +203,6 @@ td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
     line-height: 1.5;
     margin-bottom: 12px;
     font-size: 15px;
-}
-
-.foto-chamado {
-    max-width: 100%;
-    border-radius: 8px;
-    margin: 12px 0;
-    border: 1px solid #e2e8f0;
 }
 
 .feedback {
@@ -271,7 +252,7 @@ td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
     background: #059669;
 }
 
-/* Abas de Chamados */
+/* Abas de Chamados (Filtros) */
 .abas-chamados {
     display: flex;
     flex-wrap: wrap;
@@ -293,9 +274,7 @@ td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
     background: #e2e8f0;
 }
 
-/* --- NOVOS ESTILOS DE BOTÕES --- */
-
-/* Estilo Base para TODOS os botões do sistema */
+/* Estilos de botões padrão */
 button {
     cursor: pointer;
     border: none;
@@ -310,7 +289,6 @@ button {
     gap: 8px;
 }
 
-/* Botão Principal (Azul) - Aplica a quase todos */
 button:not(.btn-secundario, .btn-sair, .btn-pdf, .aba-btn, .abas-chamados button) {
     background-color: var(--p);
     color: white;
@@ -323,50 +301,17 @@ button:not(.btn-secundario, .btn-sair, .btn-pdf, .aba-btn, .abas-chamados button
     box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
 }
 
-/* Botões de Ação dentro dos Cards de Chamados */
-.acoes-card button {
-    flex: 1;
-    font-size: 14px;
-}
-
-/* Botão de Finalizar/Concluir (Verde) */
+/* Botões específicos */
 button[onclick*="concluir"], button[onclick*="abrirModalFeedback"], .btn-finalizar {
     background-color: #10b981 !important;
     color: white !important;
 }
 
-button[onclick*="concluir"]:hover, .btn-finalizar:hover {
-    background-color: #059669 !important;
-}
-
-/* Botão de Excluir ou Sair (Vermelho) */
 .btn-sair, button[onclick*="excluir"] {
     background-color: #ef4444 !important;
     color: white !important;
 }
 
-.btn-sair:hover, button[onclick*="excluir"]:hover {
-    background-color: #dc2626 !important;
-}
-
-/* Botão Secundário (Cinza) */
-.btn-secundario {
-    background-color: #64748b !important;
-    color: white !important;
-}
-
-/* Estilo para as Abas (Filtros de Chamados e Relatórios) */
-.aba-btn, .abas-chamados button {
-    background: #f1f5f9;
-    color: #64748b;
-    border-radius: 6px;
-    padding: 8px 16px;
-}
-
-.aba-btn.ativa, .abas-chamados button:hover {
-    background: var(--p);
-    color: white;
-}
 /* Itens do Menu Lateral */
 .menu nav button {
     background: transparent;
@@ -379,52 +324,145 @@ button[onclick*="concluir"]:hover, .btn-finalizar:hover {
 .menu nav button:hover {
     background: rgba(255, 255, 255, 0.1);
     color: white;
-    padding-left: 20px; /* Efeito de deslize */
+    padding-left: 20px;
 }
 
-/* Abas de Chamados (Filtros) */
-.abas-chamados button {
-    background: #e2e8f0;
-    color: #475569;
-    font-size: 13px;
-    padding: 8px 16px;
+/* Tabela responsiva */
+.table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
-.abas-chamados button:hover {
-    background: #cbd5e1;
-    color: #1e293b;
+/* Miniaturas de fotos nos chamados */
+.foto-chamado {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    margin: 8px 0;
 }
 
-/* Itens do Menu Lateral */
-.menu nav button {
-    background: transparent;
-    color: #cbd5e1;
-    padding: 12px 15px;
-    margin-bottom: 5px;
-    justify-content: flex-start;
+.foto-chamado:hover {
+    transform: scale(1.1);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    z-index: 10;
 }
 
-.menu nav button:hover {
-    background: rgba(255, 255, 255, 0.1);
+/* Estilo para imagem ampliada no modal */
+.modal-img-ampliada {
+    max-width: 80vw;
+    max-height: 80vh;
+    width: auto;
+    height: auto;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    display: block;
+    margin: 0 auto;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.95);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    flex-direction: column;
     color: white;
-    padding-left: 20px; /* Efeito de deslize */
+    gap: 20px;
 }
 
-/* Abas de Chamados (Filtros) */
-.abas-chamados button {
-    background: #e2e8f0;
-    color: #475569;
-    font-size: 13px;
-    padding: 8px 16px;
+.loading-spinner {
+    width: 60px;
+    height: 60px;
+    border: 5px solid rgba(255,255,255,0.2);
+    border-top: 5px solid #2563eb;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
 }
 
-.abas-chamados button:hover {
-    background: #cbd5e1;
-    color: #1e293b;
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
-/* ====================== RESPONSIVIDADE - MENU MOBILE ====================== */
+/* Animação de entrada da tela principal */
+#sistema {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.6s ease-out;
+}
 
+#sistema.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Cards clicáveis */
+.card {
+    transition: all 0.25s ease;
+    border: 1px solid #e2e8f0;
+}
+
+.card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 10px 20px rgba(37, 99, 235, 0.15);
+    border-color: var(--p);
+    background: #f8fafc;
+}
+
+.card:active {
+    transform: translateY(-2px);
+}
+
+.card.warning:hover {
+    border-color: #f59e0b;
+    box-shadow: 0 10px 20px rgba(245, 158, 11, 0.18);
+}
+
+.card-chamado:active,
+.card:active {
+    transform: scale(0.98);
+}
+
+/* Toast Notificações */
+.toast {
+    background: #1e2937;
+    color: white;
+    padding: 14px 20px;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+    min-width: 280px;
+    max-width: 380px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 15px;
+    opacity: 0;
+}
+
+.toast.show {
+    animation: slideIn 0.3s ease forwards;
+}
+
+.toast.success { border-left: 5px solid #10b981; }
+.toast.error   { border-left: 5px solid #ef4444; }
+.toast.info    { border-left: 5px solid #3b82f6; }
+
+@keyframes slideIn {
+    from { transform: translateX(120%); opacity: 0; }
+    to   { transform: translateX(0); opacity: 1; }
+}
+
+/* Botão Hambúrguer e Menu Responsivo */
 .btn-hamburger {
     display: none;
     position: fixed;
@@ -477,7 +515,6 @@ button[onclick*="concluir"]:hover, .btn-finalizar:hover {
         padding-right: 16px;
     }
 
-    /* Ajustes em telas pequenas */
     .cards {
         grid-template-columns: 1fr;
         gap: 16px;
@@ -492,7 +529,6 @@ button[onclick*="concluir"]:hover, .btn-finalizar:hover {
     }
 }
 
-/* Telas muito pequenas */
 @media (max-width: 480px) {
     .menu {
         width: 260px;
@@ -502,53 +538,4 @@ button[onclick*="concluir"]:hover, .btn-finalizar:hover {
         width: 94%;
         padding: 32px 24px;
     }
-}
-
-/* ANIMAÇÃO DE CARREGAMENTO APÓS LOGIN */
-.loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(15, 23, 42, 0.95);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 2000;
-    flex-direction: column;
-    color: white;
-    gap: 20px;
-}
-
-.loading-spinner {
-    width: 60px;
-    height: 60px;
-    border: 5px solid rgba(255,255,255,0.2);
-    border-top: 5px solid #2563eb;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-.loading-text {
-    font-size: 18px;
-    font-weight: 500;
-    opacity: 0.9;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* Animação de entrada da tela principal */
-#sistema {
-    opacity: 0;
-    transform: translateY(20px);
-    transition: all 0.6s ease-out;
-}
-
-#sistema.show {
-    opacity: 1;
-    transform: translateY(0);
 }

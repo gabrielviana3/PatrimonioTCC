@@ -353,7 +353,7 @@ function verFicha(num) {
         <p><strong>Categoria:</strong> ${escapeHTML(item.categoria)}</p>
         <p><strong>Data de Entrada:</strong> ${escapeHTML(item.data)}</p>
 
-        <label><strong>Estado de Conservação:</strong></label>
+        <label>Estado de Conservação:</label>
         <select id="estadoAtual" style="width:100%; padding:10px; margin:8px 0; border-radius:8px;" ${!podeEditar ? 'disabled' : ''}>
             <option value="Novo" ${item.estado === "Novo" ? "selected" : ""}>Novo</option>
             <option value="Bom" ${item.estado === "Bom" ? "selected" : ""}>Bom</option>

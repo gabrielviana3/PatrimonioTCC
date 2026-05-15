@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Patrimônio ISEPAM</title>
+    <title>Sistema de Patrimônio</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="png" href="faviconlogo.png">
+    <link rel="apple-touch-icon" href="logo-isepam.png">
+    <link rel="manifest" href="site.webmanifest">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
@@ -21,6 +24,9 @@
 <!-- Tela de Login -->
 <div id="loginTela" class="login">
     <div class="login-box">
+        <div class="logo-login">
+            <img src="logoisepam.png" alt="ISEPAM">
+        </div>
         <h2>ISEPAM</h2>
         <p id="loginSubtitle">Gestor de bens patrimoniais</p>
 
@@ -35,7 +41,6 @@
         </div>
 
         <div id="formCadastro" class="escondido">
-            <h3>Criar Nova Conta</h3>
             <input type="text" id="nomeCadastro" placeholder="Nome completo">
             <input type="email" id="emailCadastro" placeholder="Email">
             <input type="password" id="senhaCadastro" placeholder="Senha">

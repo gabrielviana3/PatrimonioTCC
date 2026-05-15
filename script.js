@@ -203,13 +203,10 @@ function login() {
             setTimeout(() => {
                 document.getElementById("sistema").classList.add("show");
             }, 50);
-
             document.getElementById("usuarioInfo").innerHTML = `Olá, ${escapeHTML(usuario.nome)} (${usuarioRole === 'admin' ? 'Admin' : 'Técnico'})`;
-            
             loading.style.display = "none";
-            
             mostrarTela('dashboard');
-            // Não registra mais login
+            ativarBotaoMenu('dashboard');   // <--- LINHA ADICIONADA
         }, 1800);
 
     } else {
@@ -223,10 +220,15 @@ function logout() {
 
 // ====================== NAVEGAÇÃO ======================
 function mostrarTela(id, filtroChamado = null) {
+    // Esconde todas as telas
     document.querySelectorAll(".tela").forEach(t => t.classList.add("escondido"));
     const tela = document.getElementById(id);
     if (tela) tela.classList.remove("escondido");
 
+    // Marca o botão do menu como ativo
+    ativarBotaoMenu(id);
+
+    // Atualizações específicas por tela
     if (id === 'dashboard') {
         atualizarDashboard();
         renderAtividades();
@@ -246,6 +248,35 @@ function mostrarTela(id, filtroChamado = null) {
                 atualizarEstatisticas();
             }
         }, 100);
+    }
+}
+
+// Função para ativar o botão correspondente no menu
+function ativarBotaoMenu(telaId) {
+    // Mapeamento dos IDs das telas para os textos dos botões (ou use data-atributo)
+    const mapa = {
+        'dashboard': 'Dashboard',
+        'bens': 'Inventário',
+        'cadastro': 'Cadastrar',
+        'chamados': 'Chamados',
+        'relatorio': 'Relatórios'
+    };
+
+    const nomeBotao = mapa[telaId];
+    if (!nomeBotao) return;
+
+    // Remove a classe 'ativo' de todos os botões do menu
+    document.querySelectorAll('.menu nav button').forEach(btn => {
+        btn.classList.remove('ativo');
+    });
+
+    // Adiciona a classe 'ativo' ao botão cujo texto corresponde (ignorando maiúsculas/minúsculas)
+    const botoes = document.querySelectorAll('.menu nav button');
+    for (let btn of botoes) {
+        if (btn.textContent.trim() === nomeBotao) {
+            btn.classList.add('ativo');
+            break;
+        }
     }
 }
 
@@ -325,16 +356,24 @@ function filtrarTudo() {
         b.nome.toLowerCase().includes(nomeFiltro)
     );
 
-    document.getElementById("corpoTabela").innerHTML = filtrados.map(b => `
+    let html = filtrados.map(b => `
         <tr>
-            <td>${escapeHTML(b.numero)}</td>
-            <td>${escapeHTML(b.nome)}</td>
-            <td>R$ ${parseFloat(b.valor).toFixed(2)}</td>
-            <td>${escapeHTML(b.localizacao)}</td>
-            <td>${escapeHTML(b.estado)}</td>
-            <td><button onclick="verFicha('${escapeHTML(b.numero)}')">Ver Ficha</button></td>
+            <td data-label="Nº">${escapeHTML(b.numero)}</td>
+            <td data-label="Nome">${escapeHTML(b.nome)}</td>
+            <td data-label="Valor">R$ ${parseFloat(b.valor).toFixed(2)}</td>
+            <td data-label="Local">${escapeHTML(b.localizacao)}</td>
+            <td data-label="Estado">${escapeHTML(b.estado)}</td>
+            <td data-label="Ações">
+                <button onclick="verFicha('${escapeHTML(b.numero)}')" class="btn-ver-ficha">Ver Ficha</button>
+            </td>
         </tr>
     `).join('');
+
+    if (filtrados.length === 0) {
+        html = `<tr><td colspan="6" style="text-align:center;padding:50px;color:#64748b;">Nenhum bem encontrado.</td></tr>`;
+    }
+
+    document.getElementById("corpoTabela").innerHTML = html;
 }
 
 function verFicha(num) {
@@ -1104,6 +1143,7 @@ function atualizarDashboard() {
     document.getElementById("emAndamento").innerText = chamados.filter(c => c.status === "Em andamento").length;
 }
 
+
 // ====================== MENU MOBILE ======================
 function initMobileMenu() {
     const btnMenu = document.getElementById('btnMenuMobile');
@@ -1111,31 +1151,42 @@ function initMobileMenu() {
 
     if (!btnMenu || !menu) return;
 
+    // Cria overlay para fechar o menu ao clicar fora
+    let overlay = document.getElementById('menuOverlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'menuOverlay';
+        overlay.className = 'menu-overlay';
+        document.body.appendChild(overlay);
+    }
+
+    const abrirMenu = () => {
+        menu.classList.add('open');
+        overlay.classList.add('ativo');
+        btnMenu.textContent = '✕';
+    };
+
+    const fecharMenu = () => {
+        menu.classList.remove('open');
+        overlay.classList.remove('ativo');
+        btnMenu.textContent = '☰';
+    };
+
     btnMenu.addEventListener('click', (e) => {
         e.stopPropagation();
-        menu.classList.toggle('open');
+        menu.classList.contains('open') ? fecharMenu() : abrirMenu();
     });
+
+    overlay.addEventListener('click', fecharMenu);
 
     document.querySelectorAll('.menu button').forEach(btn => {
         btn.addEventListener('click', () => {
-            if (window.innerWidth <= 992) {
-                menu.classList.remove('open');
-            }
+            if (window.innerWidth <= 992) fecharMenu();
         });
     });
 
-    document.addEventListener('click', (e) => {
-        if (window.innerWidth <= 992 && 
-            !menu.contains(e.target) && 
-            e.target !== btnMenu) {
-            menu.classList.remove('open');
-        }
-    });
-
     window.addEventListener('resize', () => {
-        if (window.innerWidth > 992) {
-            menu.classList.remove('open');
-        }
+        if (window.innerWidth > 992) fecharMenu();
     });
 }
 

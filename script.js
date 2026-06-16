@@ -17,14 +17,17 @@ localStorage.setItem("usuarios", JSON.stringify(usuarios));
 
 let usuarioLogado = "";
 let usuarioRole = "";
+let navHistorico = [];
+let navPosicao = -1;
+let navIgnorarProxima = false;
 
 // ====================== PERMISSÕES ======================
 function verificarPermissao(acao) {
     if (usuarioRole === 'admin') return true;
     if (usuarioRole === 'tecnico') {
         const acoesPermitidas = [
-            'cadastrarBem', 'editarBem', 'abrirChamado', 'aceitarChamado',
-            'concluirChamado', 'excluirChamado', 'verRelatorios', 'verInventario'
+            'abrirChamado', 'aceitarChamado',
+            'concluirChamado', 'excluirChamado', 'verInventario'
         ];
         return acoesPermitidas.includes(acao);
     }
@@ -159,6 +162,18 @@ function cadastrarUsuario() {
         showToast("Preencha todos os campos obrigatórios!", "error");
         return;
     }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showToast("Digite um email válido! Ex: nome@dominio.com", "error");
+        return;
+    }
+
+    if (senha.length < 6) {
+        showToast("A senha deve ter pelo menos 6 caracteres!", "error");
+        return;
+    }
+
     if (usuarios.some(u => u.email === email)) {
         showToast("Este email já está cadastrado!", "error");
         return;
@@ -166,10 +181,18 @@ function cadastrarUsuario() {
 
     usuarios.push({ id: Date.now(), nome, email, senha, role });
     salvarUsuarios();
-    showToast("Conta criada com sucesso!", "success");
+
+    showToast("Cadastro realizado com sucesso!", "success");
+
+    // Limpa os campos
+    document.getElementById("nomeCadastro").value = "";
+    document.getElementById("senhaCadastro").value = "";
+    document.getElementById("roleCadastro").value = "tecnico";
+
+    // Volta para o login com o email já preenchido
     voltarParaLogin();
     document.getElementById("email").value = email;
-    document.getElementById("senha").focus();
+    setTimeout(() => document.getElementById("senha").focus(), 100);
 }
 
 function login() {
@@ -220,6 +243,21 @@ function logout() {
 
 // ====================== NAVEGAÇÃO ======================
 function mostrarTela(id, filtroChamado = null) {
+    // Registra no histórico de navegação (exceto ao usar as setas)
+    if (!navIgnorarProxima) {
+        const entrada = { id, filtroChamado };
+        if (navPosicao < navHistorico.length - 1) {
+            navHistorico = navHistorico.slice(0, navPosicao + 1);
+        }
+        const atual = navHistorico[navPosicao];
+        if (!atual || atual.id !== id || atual.filtroChamado !== filtroChamado) {
+            navHistorico.push(entrada);
+            navPosicao = navHistorico.length - 1;
+        }
+        atualizarBotoesNav();
+    }
+    navIgnorarProxima = false;
+
     // Esconde todas as telas
     document.querySelectorAll(".tela").forEach(t => t.classList.add("escondido"));
     const tela = document.getElementById(id);
@@ -278,6 +316,33 @@ function ativarBotaoMenu(telaId) {
             break;
         }
     }
+}
+
+function navVoltar() {
+    if (navPosicao <= 0) return;
+    navPosicao--;
+    const entrada = navHistorico[navPosicao];
+    navIgnorarProxima = true;
+    mostrarTela(entrada.id, entrada.filtroChamado);
+    atualizarBotoesNav();
+}
+
+function navAvancar() {
+    if (navPosicao >= navHistorico.length - 1) return;
+    navPosicao++;
+    const entrada = navHistorico[navPosicao];
+    navIgnorarProxima = true;
+    mostrarTela(entrada.id, entrada.filtroChamado);
+    atualizarBotoesNav();
+}
+
+function atualizarBotoesNav() {
+    const btnVoltar = document.getElementById("btnNavVoltar");
+    const btnAvancar = document.getElementById("btnNavAvancar");
+    if (!btnVoltar || !btnAvancar) return;
+
+    btnVoltar.disabled = navPosicao <= 0;
+    btnAvancar.disabled = navPosicao >= navHistorico.length - 1;
 }
 
 // ====================== ATIVIDADES ======================
@@ -580,10 +645,31 @@ function previewFotoChamado() {
 function renderizarChamados(filtro = null) {
     const container = document.getElementById("listaChamados");
 
-    let lista = chamados;
-    if (filtro && filtro !== 'todos') {
-        lista = chamados.filter(c => c.status === filtro);
-    }
+    const ini = document.getElementById("filtroChamadoDataInicio")?.value || "";
+    const fim = document.getElementById("filtroChamadoDataFim")?.value || "";
+    const cat = document.getElementById("filtroChamadoCategoria")?.value || "";
+
+    let lista = chamados.filter(c => {
+        // Filtro de status
+        if (filtro && filtro !== 'todos' && c.status !== filtro) return false;
+
+        // Filtro de data
+        if (ini || fim) {
+            const dataChamado = c.data.split(' ')[0];
+            const [dia, mes, ano] = dataChamado.split('/');
+            const dataISO = `${ano}-${mes}-${dia}`;
+            if (ini && dataISO < ini) return false;
+            if (fim && dataISO > fim) return false;
+        }
+
+        // Filtro de categoria (busca pelo bem relacionado)
+        if (cat) {
+            const bem = bens.find(b => b.numero === c.patrimonio);
+            if (!bem || bem.categoria !== cat) return false;
+        }
+
+        return true;
+    });
 
     if (lista.length === 0) {
         container.innerHTML = `<p style="color:#64748b; text-align:center; padding:30px;">Nenhum chamado encontrado.</p>`;
@@ -612,7 +698,6 @@ function renderizarChamados(filtro = null) {
                     <button onclick="aceitarChamado(${c.id})" class="btn-aceitar">Aceitar</button>
                     <button onclick="excluirChamado(${c.id})" style="background:#ef4444; color:white;">🗑 Excluir</button>
                 ` : ''}
-
                 ${c.status === 'Em andamento' && podeAceitarFinalizar ? `
                     <button onclick="abrirModalFeedback(${c.id})" class="btn-finalizar">Finalizar</button>
                 ` : ''}
@@ -862,6 +947,220 @@ function gerarPDFItens() {
 
     adicionarRodapePDF(doc);
     doc.save("relatorio_patrimonio_isepam.pdf");
+}
+
+async function gerarExcelItens() {
+    const ini = document.getElementById("dataInicio").value;
+    const fim = document.getElementById("dataFim").value;
+    const cat = document.getElementById("filtroCategoriaPDF").value;
+    const est = document.getElementById("filtroEstadoPDF").value;
+
+    let filtrados = bens.filter(b => {
+        const dataOk = (!ini || b.data >= ini) && (!fim || b.data <= fim);
+        const catOk = !cat || b.categoria === cat;
+        const estOk = !est || b.estado === est;
+        return dataOk && catOk && estOk;
+    });
+
+    const wb = new ExcelJS.Workbook();
+    wb.creator = "ISEPAM";
+    const ws = wb.addWorksheet("Patrimônio");
+
+    // Largura das colunas
+    ws.columns = [
+        { key: "data",       width: 14 },
+        { key: "numero",     width: 16 },
+        { key: "nome",       width: 32 },
+        { key: "categoria",  width: 16 },
+        { key: "valor",      width: 14 },
+        { key: "localizacao",width: 22 },
+        { key: "estado",     width: 12 },
+        { key: "notaFiscal", width: 16 },
+        { key: "fornecedor", width: 20 },
+    ];
+
+    // Linha de título
+    ws.mergeCells("A1:I1");
+    const titulo = ws.getCell("A1");
+    titulo.value = "ISEPAM — Relatório de Patrimônio";
+    titulo.font = { name: "Arial", size: 14, bold: true, color: { argb: "FFFFFFFF" } };
+    titulo.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } };
+    titulo.alignment = { horizontal: "center", vertical: "middle" };
+    ws.getRow(1).height = 32;
+
+    // Linha de subtítulo (data de geração + totais)
+    ws.mergeCells("A2:I2");
+    const sub = ws.getCell("A2");
+    const valorTotal = filtrados.reduce((acc, b) => acc + parseFloat(b.valor || 0), 0);
+    sub.value = `Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'})}   |   Total de itens: ${filtrados.length}   |   Valor total: R$ ${valorTotal.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+    sub.font = { name: "Arial", size: 9, color: { argb: "FFFFFFFF" } };
+    sub.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1D4ED8" } };
+    sub.alignment = { horizontal: "center", vertical: "middle" };
+    ws.getRow(2).height = 20;
+
+    // Linha de cabeçalho
+    const cabecalho = ws.addRow(["Data Entrada", "Nº Patrimônio", "Nome", "Categoria", "Valor (R$)", "Localização", "Estado", "Nota Fiscal", "Fornecedor"]);
+    cabecalho.eachCell(cell => {
+        cell.font = { name: "Arial", bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E2937" } };
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+        cell.border = {
+            bottom: { style: "thin", color: { argb: "FF2563EB" } }
+        };
+    });
+    ws.getRow(3).height = 22;
+
+    // Linhas de dados
+    filtrados.forEach((b, i) => {
+        const row = ws.addRow([
+            b.data,
+            b.numero,
+            b.nome,
+            b.categoria,
+            parseFloat(b.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
+            b.localizacao,
+            b.estado,
+            b.notaFiscal || "",
+            b.fornecedor || ""
+        ]);
+
+        const bg = i % 2 === 0 ? "FFF8FAFC" : "FFFFFFFF";
+        row.eachCell(cell => {
+            cell.font = { name: "Arial", size: 9 };
+            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bg } };
+            cell.alignment = { vertical: "middle" };
+            cell.border = {
+                bottom: { style: "hair", color: { argb: "FFE2E8F0" } }
+            };
+        });
+        row.height = 18;
+    });
+
+    // Rodapé
+    ws.addRow([]);
+    const rodape = ws.addRow([`ISEPAM — Sistema de Gestão de Patrimônio • Página gerada automaticamente`]);
+    ws.mergeCells(`A${ws.rowCount}:I${ws.rowCount}`);
+    const celRodape = ws.getCell(`A${ws.rowCount}`);
+    celRodape.font = { name: "Arial", size: 8, italic: true, color: { argb: "FF94A3B8" } };
+    celRodape.alignment = { horizontal: "center" };
+
+    // Download
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio_patrimonio_isepam.xlsx";
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+async function gerarExcelChamados() {
+    const ini = document.getElementById("dataInicio").value;
+    const fim = document.getElementById("dataFim").value;
+    const filtroResultado = document.getElementById("filtroResultadoChamado").value;
+
+    let filtrados = chamados.filter(c => {
+        const dataChamado = c.data.split(' ')[0];
+        const [dia, mes, ano] = dataChamado.split('/');
+        const dataISO = `${ano}-${mes}-${dia}`;
+        const dataOk = (!ini || dataISO >= ini) && (!fim || dataISO <= fim);
+        let resultadoOk = true;
+        if (filtroResultado === 'Concluído') resultadoOk = c.status === 'Concluído';
+        else if (filtroResultado === 'Não reparado') resultadoOk = c.status === 'Não reparado';
+        return dataOk && resultadoOk;
+    });
+
+    const wb = new ExcelJS.Workbook();
+    wb.creator = "ISEPAM";
+    const ws = wb.addWorksheet("Chamados");
+
+    ws.columns = [
+        { key: "data",          width: 18 },
+        { key: "patrimonio",    width: 14 },
+        { key: "descricao",     width: 36 },
+        { key: "status",        width: 14 },
+        { key: "tecnico",       width: 20 },
+        { key: "resolucao",     width: 36 },
+        { key: "dataConclusao", width: 18 },
+    ];
+
+    // Título
+    ws.mergeCells("A1:G1");
+    const titulo = ws.getCell("A1");
+    titulo.value = "ISEPAM — Relatório de Chamados de Manutenção";
+    titulo.font = { name: "Arial", size: 14, bold: true, color: { argb: "FFFFFFFF" } };
+    titulo.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } };
+    titulo.alignment = { horizontal: "center", vertical: "middle" };
+    ws.getRow(1).height = 32;
+
+    // Subtítulo
+    ws.mergeCells("A2:G2");
+    const sub = ws.getCell("A2");
+    sub.value = `Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'})}   |   Total de chamados: ${filtrados.length}`;
+    sub.font = { name: "Arial", size: 9, color: { argb: "FFFFFFFF" } };
+    sub.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1D4ED8" } };
+    sub.alignment = { horizontal: "center", vertical: "middle" };
+    ws.getRow(2).height = 20;
+
+    // Cabeçalho
+    const cabecalho = ws.addRow(["Data", "Patrimônio", "Descrição", "Status", "Técnico", "Resolução", "Data Conclusão"]);
+    cabecalho.eachCell(cell => {
+        cell.font = { name: "Arial", bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E2937" } };
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+        cell.border = { bottom: { style: "thin", color: { argb: "FF2563EB" } } };
+    });
+    ws.getRow(3).height = 22;
+
+    // Cores por status
+    const corStatus = {
+        "Concluído":    { argb: "FFD1FAE5" },
+        "Em andamento": { argb: "FFFEF3C7" },
+        "Não reparado": { argb: "FFFEE2E2" },
+        "Aberto":       { argb: "FFE0E7FF" },
+    };
+
+    filtrados.forEach((c, i) => {
+        const row = ws.addRow([
+            c.data,
+            c.patrimonio,
+            c.descricao,
+            c.status,
+            c.tecnico || "—",
+            c.feedback || "—",
+            c.dataConclusao || "—"
+        ]);
+
+        const bgPadrao = i % 2 === 0 ? "FFF8FAFC" : "FFFFFFFF";
+        row.eachCell((cell, colIndex) => {
+            // Coluna de status recebe cor temática
+            const bg = colIndex === 4 ? (corStatus[c.status] || { argb: bgPadrao }) : { argb: bgPadrao };
+            cell.font = { name: "Arial", size: 9 };
+            cell.fill = { type: "pattern", pattern: "solid", fgColor: bg };
+            cell.alignment = { vertical: "middle", wrapText: colIndex === 3 || colIndex === 6 };
+            cell.border = { bottom: { style: "hair", color: { argb: "FFE2E8F0" } } };
+        });
+        row.height = 18;
+    });
+
+    // Rodapé
+    ws.addRow([]);
+    ws.addRow([`ISEPAM — Sistema de Gestão de Patrimônio • Página gerada automaticamente`]);
+    ws.mergeCells(`A${ws.rowCount}:G${ws.rowCount}`);
+    const celRodape = ws.getCell(`A${ws.rowCount}`);
+    celRodape.font = { name: "Arial", size: 8, italic: true, color: { argb: "FF94A3B8" } };
+    celRodape.alignment = { horizontal: "center" };
+
+    // Download
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio_chamados_isepam.xlsx";
+    a.click();
+    URL.revokeObjectURL(url);
 }
 
 function mudarAbaRelatorio(e, id) {
@@ -1151,7 +1450,6 @@ function initMobileMenu() {
 
     if (!btnMenu || !menu) return;
 
-    // Cria overlay para fechar o menu ao clicar fora
     let overlay = document.getElementById('menuOverlay');
     if (!overlay) {
         overlay = document.createElement('div');
@@ -1160,36 +1458,55 @@ function initMobileMenu() {
         document.body.appendChild(overlay);
     }
 
-    const abrirMenu = () => {
+    function abrirMenu() {
         menu.classList.add('open');
         overlay.classList.add('ativo');
         btnMenu.textContent = '✕';
-    };
+    }
 
-    const fecharMenu = () => {
+    function fecharMenu() {
         menu.classList.remove('open');
         overlay.classList.remove('ativo');
         btnMenu.textContent = '☰';
-    };
+    }
 
-    btnMenu.addEventListener('click', (e) => {
+    // Remove listeners antigos
+    const btnClone = btnMenu.cloneNode(true);
+    btnMenu.parentNode.replaceChild(btnClone, btnMenu);
+
+    // Clique no hambúrguer
+    btnClone.addEventListener('click', function(e) {
         e.stopPropagation();
-        menu.classList.contains('open') ? fecharMenu() : abrirMenu();
+        if (menu.classList.contains('open')) {
+            fecharMenu();
+        } else {
+            abrirMenu();
+        }
     });
 
-    overlay.addEventListener('click', fecharMenu);
+    // Fecha ao clicar no overlay (área escura)
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+            fecharMenu();
+        }
+    });
 
-    document.querySelectorAll('.menu button').forEach(btn => {
+    // Fecha o menu ao clicar em qualquer botão do menu (no mobile)
+    document.querySelectorAll('.menu nav button').forEach(btn => {
         btn.addEventListener('click', () => {
-            if (window.innerWidth <= 992) fecharMenu();
+            if (window.innerWidth <= 768) {
+                fecharMenu();
+            }
         });
     });
 
+    // Fecha menu ao redimensionar para desktop
     window.addEventListener('resize', () => {
-        if (window.innerWidth > 992) fecharMenu();
+        if (window.innerWidth > 768) {
+            fecharMenu();
+        }
     });
 }
-
 document.addEventListener('DOMContentLoaded', initMobileMenu);
 
 // ====================== TOAST ======================
@@ -1213,4 +1530,15 @@ function showToast(mensagem, tipo = "success") {
         toast.style.opacity = "0";
         setTimeout(() => toast.remove(), 300);
     }, 3000);
+}
+
+function toggleSenha(inputId, olho) {
+    const input = document.getElementById(inputId);
+    if (input.type === 'password') {
+        input.type = 'text';
+        olho.textContent = '🙈';
+    } else {
+        input.type = 'password';
+        olho.textContent = '👁';
+    }
 }

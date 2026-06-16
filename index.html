@@ -12,6 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 </head>
 <body>
 
@@ -32,7 +33,10 @@
 
         <div id="formLogin">
             <input type="email" id="email" placeholder="Email" autofocus>
-            <input type="password" id="senha" placeholder="Senha">
+            <div style="position:relative;">
+                <input type="password" id="senha" placeholder="Senha" style="padding-right: 44px;">
+                <span onclick="toggleSenha('senha', this)" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); cursor:pointer; font-size:1.1rem; color:#94a3b8; user-select:none;">👁</span>
+            </div>
             <br>
             <button onclick="login()">Entrar</button>
             <p class="link-cadastro">
@@ -43,7 +47,10 @@
         <div id="formCadastro" class="escondido">
             <input type="text" id="nomeCadastro" placeholder="Nome completo">
             <input type="email" id="emailCadastro" placeholder="Email">
-            <input type="password" id="senhaCadastro" placeholder="Senha">
+            <div style="position:relative;">
+                <input type="password" id="senhaCadastro" placeholder="Senha" style="padding-right: 44px;">
+                <span onclick="toggleSenha('senhaCadastro', this)" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); cursor:pointer; font-size:1.1rem; color:#94a3b8; user-select:none;">👁</span>
+            </div>
             <select id="roleCadastro">
                 <option value="tecnico">Técnico de Manutenção</option>
                 <option value="admin">Administrador</option>
@@ -72,6 +79,11 @@
     </aside>
 
     <main class="conteudo">
+
+        <div class="nav-historico">
+            <button id="btnNavVoltar" onclick="navVoltar()" title="Voltar" disabled>&#8592;</button>
+            <button id="btnNavAvancar" onclick="navAvancar()" title="Avançar" disabled>&#8594;</button>
+        </div>
 
         <!-- Dashboard -->
         <section id="dashboard" class="tela">
@@ -145,6 +157,23 @@
                 <button onclick="abrirChamado()">Abrir Chamado</button>
             </div>
 
+            <div class="filtros-chamados-avancados">
+                <div class="campo-data">
+                    <label>De:</label>
+                    <input type="date" id="filtroChamadoDataInicio" onchange="filtrarChamados(filtroChamadoAtual)">
+                </div>
+                <div class="campo-data">
+                    <label>Até:</label>
+                    <input type="date" id="filtroChamadoDataFim" onchange="filtrarChamados(filtroChamadoAtual)">
+                </div>
+                <select id="filtroChamadoCategoria" onchange="filtrarChamados(filtroChamadoAtual)">
+                    <option value="">Todas Categorias</option>
+                    <option>Mobiliário</option>
+                    <option>TI</option>
+                    <option>Áudio e Vídeo</option>
+                </select>
+            </div>
+
             <div class="abas-chamados">
                 <button onclick="filtrarChamados('todos')" class="filtro-chamado">Todos</button>
                 <button onclick="filtrarChamados('Aberto')" class="filtro-chamado">Aberto</button>
@@ -196,6 +225,7 @@
                     </select>
                     <button onclick="gerarRelatorioItens()">Visualizar na Tela</button>
                     <button onclick="gerarPDFItens()" class="btn-pdf">📄 Baixar PDF Patrimônio</button>
+                    <button onclick="gerarExcelItens()" class="btn-excel">📊 Baixar Excel Patrimônio</button>
                 </div>
             </div>
 
@@ -209,6 +239,7 @@
                     </select>
                     <button onclick="gerarRelatorioChamados()">Visualizar Chamados</button>
                     <button onclick="gerarPDFChamados()" class="btn-pdf">📄 Baixar PDF Chamados</button>
+                    <button onclick="gerarExcelChamados()" class="btn-excel">📊 Baixar Excel Chamados</button>
                 </div>
             </div>
 
@@ -224,13 +255,13 @@
                 </div>
 
                 <div style="display: flex; gap: 30px; flex-wrap: wrap; justify-content: center;">
-                    <div style="width: 380px;">
+                    <div style="width: 100%; max-width: 380px;">
                         <h3 style="text-align:center; margin-bottom:10px;">Distribuição por Categoria</h3>
-                        <canvas id="graficoCategoria" width="350" height="350"></canvas>
+                        <canvas id="graficoCategoria"></canvas>
                     </div>
-                    <div style="width: 380px;">
+                    <div style="width: 100%; max-width: 380px;">
                         <h3 style="text-align:center; margin-bottom:10px;">Estado de Conservação</h3>
-                        <canvas id="graficoEstado" width="350" height="350"></canvas>
+                        <canvas id="graficoEstado"></canvas>
                     </div>
                 </div>
 

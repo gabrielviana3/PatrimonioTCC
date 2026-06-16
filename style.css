@@ -236,7 +236,7 @@
     table {
         width: 100%;
         border-collapse: collapse;
-        min-width: 600px;
+        min-width: 0;
     }
 
     th {
@@ -468,6 +468,29 @@
         margin: 24px 0 20px;
     }
 
+    .filtros-chamados-avancados {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+
+    .filtros-chamados-avancados select {
+        flex: 1;
+        min-width: 160px;
+    }
+
+    .filtros-chamados-avancados .campo-data {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .filtros-chamados-avancados .campo-data input {
+        width: auto;
+    }
+
     .abas-chamados button {
         padding: 10px 18px;
         background: #f1f5f9;
@@ -541,6 +564,23 @@
         overflow-x: auto;
         border-radius: 20px;
         border: 1px solid var(--border);
+    }
+
+    .btn-excel {
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: 0.2s;
+    }
+
+    .btn-excel:hover {
+        background: #059669;
+        transform: scale(1.02);
     }
 
     /* ====================== BOTÕES GERAIS ====================== */
@@ -662,65 +702,66 @@
     }
 
     /* Mobile largo e tablet */
-    @media (max-width: 992px) {
-        .container {
-            position: relative;
-        }
+    @media (max-width: 768px) {
 
         .btn-hamburger {
-            display: flex;
+            display: flex !important;
             align-items: center;
             justify-content: center;
             position: fixed;
             top: 16px;
             left: 16px;
-            z-index: 1300;
-            background: var(--d);
+            z-index: 9999;
+            background: #0f172a;
             color: white;
             width: 52px;
             height: 52px;
             font-size: 1.8rem;
             border-radius: 20px;
-            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
             border: none;
-            transition: 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            cursor: pointer;
         }
 
         .menu {
-            position: fixed;
-            left: -280px;
+            position: fixed !important;
             top: 0;
-            height: 100vh;
+            left: -300px;
             width: 280px;
-            z-index: 1400;
-            transition: left 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-            box-shadow: 10px 0 30px rgba(0, 0, 0, 0.3);
+            height: 100vh;
+            z-index: 9000;
+            background: #0f172a;
             padding-top: 80px;
+            transition: left 0.3s ease;
+            overflow-y: auto;
         }
 
         .menu.open {
-            left: 0;
+            left: 0 !important;
         }
 
         .menu-overlay {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            z-index: 1350;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 8000;
             display: none;
-            opacity: 0;
-            transition: opacity 0.3s ease;
         }
 
-        .menu-overlay.ativo {
-            opacity: 1;
-        }
+       /* .menu-overlay.ativo {
+            display: block;
+        }*/
 
         .conteudo {
-            padding: 88px 16px 90px 16px;
+            padding: 88px 16px 40px 16px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            overflow: hidden;
         }
 
         .cards {
@@ -751,14 +792,18 @@
             align-items: center;
             padding: 12px 16px;
             border-bottom: 1px solid #f1f5f9;
+            word-break: break-word;
+            gap:8px;
         }
 
         .table-container td:before {
             content: attr(data-label);
             font-weight: 600;
             color: #475569;
+            min-width: 45%;
             width: 45%;
             font-size: 0.8rem;
+            flex-shrink: 0;
         }
 
         .table-container td:last-child:before {
@@ -789,6 +834,12 @@
 
         .campo-data input {
             flex: 1;
+        }
+    }
+
+    @media (min-width: 600px) and (max-width: 768px) {
+        .conteudo {
+            padding: 24px 20px;
         }
     }
 
@@ -830,9 +881,22 @@
         }
 
         .btn-hamburger {
-            width: 48px;
-            height: 48px;
-            font-size: 1.6rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 1600; /* ← era 1300, sobe para 1600 */
+            background: var(--d);
+            color: white;
+            width: 52px;
+            height: 52px;
+            font-size: 1.8rem;
+            border-radius: 20px;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
+            border: none;
+            transition: 0.2s;
         }
     }
 
@@ -857,6 +921,58 @@
         }
     }
 
+    /* ====================== BOTÕES DE NAVEGAÇÃO (SETAS) ====================== */
+.nav-historico {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.nav-historico button {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    padding: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+.nav-historico button:hover:not(:disabled) {
+    background: var(--p);
+    color: white;
+    border-color: var(--p);
+    transform: scale(1.08);
+    box-shadow: 0 4px 10px rgba(37,99,235,0.2);
+}
+
+.nav-historico button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+@media (max-width: 768px) {
+    .nav-historico {
+        margin-top: 0;
+        margin-bottom: 14px;
+    }
+
+    .nav-historico button {
+        width: 40px;
+        height: 40px;
+        font-size: 1.1rem;
+    }
+}
+
  /* Animações suaves */
 #sistema {
     opacity: 0;
@@ -879,70 +995,10 @@
 
 table {
     width: 100%;
-    min-width: 400px;
+    min-width: 0;
     table-layout: auto;
 }
 
-/* Mobile: cards mais compactos */
-@media (max-width: 92px) {
-    .table-container {
-        overflow-x: visible;
-    }
-    
-    table, thead, tbody, th, td, tr {
-        display: block;
-    }
-    
-    thead {
-        display: none;
-    }
-    
-    tr {
-        margin-bottom: 16px;
-        border-radius: 16px;
-        background: white;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-        border: 1px solid #e2e8f0;
-        width: 100%;
-        overflow: hidden;
-    }
-    
-    td {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px 12px;
-        border-bottom: 1px solid #f1f5f9;
-        width: 50%;
-        box-sizing: border-box;
-        font-size: 0.85rem;
-    }
-    
-    td:before {
-        content: attr(data-label);
-        font-weight: 300;
-        color: #475569;
-        width: 38%;
-        flex-shrink: 0;
-        font-size: 0.75rem;
-    }
-    
-    td:last-child {
-        border-bottom: none;
-    }
-    
-    td[data-label="Ações"] {
-        flex-direction: column;
-        gap: 6px;
-    }
-    
-    td[data-label="Ações"] button {
-        width: 50%;
-        justify-content: center;
-        padding: 8px 12px;
-        font-size: 0.75rem;
-    }
-}
 
 /* Telas muito pequenas (<=480px): ainda mais compacto */
 @media (max-width: 240px) {
@@ -975,5 +1031,37 @@ table {
 @media (max-width: 480px) {
     .logo-login img {
         max-width: 90px;
+    }
+}
+
+@media (min-width: 769px) {
+    #corpoTabela td,
+    #bens thead th {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 180px;
+    }
+
+    #bens thead th:nth-child(2),
+    #corpoTabela td:nth-child(2) {
+        max-width: 220px;
+    }
+
+    #bens thead th:nth-child(6),
+    #corpoTabela td:nth-child(6) {
+        max-width: 120px;
+        white-space: normal;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        overflow: hidden;
+    }
+
+    .conteudo {
+        width: 100%;
+        overflow-x: hidden;
     }
 }

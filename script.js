@@ -348,7 +348,7 @@ function atualizarBotoesNav() {
 // ====================== ATIVIDADES ======================
 function registrarAtividade(msg) {
     const agora = new Date().toLocaleString('pt-BR');
-    atividades.unshift({ data: agora, texto: msg });
+    atividades.unshift({ data: agora, texto: msg, responsavel: usuarioLogado || "Sistema" });
     if (atividades.length > 20) atividades.pop();
     salvar();
 }
@@ -357,7 +357,12 @@ function renderAtividades() {
     const container = document.getElementById("listaAtividades");
     if (!container) return;
     container.innerHTML = atividades.length ? 
-        atividades.map(a => `<div class="log-item"><small>${escapeHTML(a.data)}</small><p>${escapeHTML(a.texto)}</p></div>`).join('') 
+        atividades.map(a => `
+            <div class="log-item">
+                <small>${escapeHTML(a.data)}</small>
+                ${a.responsavel ? `<span class="log-responsavel">👤 ${escapeHTML(a.responsavel)}</span>` : ''}
+                <p>${escapeHTML(a.texto)}</p>
+            </div>`).join('') 
         : '<p style="color:#64748b; text-align:center;">Nenhuma atividade recente.</p>';
 }
 
@@ -391,11 +396,12 @@ function cadastrarBem() {
         localizacao: document.getElementById("localizacao").value.trim() || "Não informada",
         estado: document.getElementById("estado").value,
         categoria: document.getElementById("categoria").value,
-        data: document.getElementById("dataCad").value
+        data: document.getElementById("dataCad").value,
+        cadastradoPor: usuarioLogado
     };
 
     bens.push(novo);
-    registrarAtividade(`Cadastrado: ${nome} (Nº ${numero}) - R$ ${valor.toFixed(2)}`);
+    registrarAtividade(`Cadastrado por ${usuarioLogado}: ${nome} (Nº ${numero}) - R$ ${valor.toFixed(2)}`);
     
     showToast("Bem cadastrado com sucesso!", "success");    
     
@@ -456,6 +462,8 @@ function verFicha(num) {
         <p><strong>Localização:</strong> ${escapeHTML(item.localizacao)}</p>
         <p><strong>Categoria:</strong> ${escapeHTML(item.categoria)}</p>
         <p><strong>Data de Entrada:</strong> ${escapeHTML(item.data)}</p>
+        ${item.cadastradoPor ? `<p><strong>Cadastrado por:</strong> ${escapeHTML(item.cadastradoPor)}</p>` : ''}
+        ${item.editadoPor ? `<p><strong>Última edição por:</strong> ${escapeHTML(item.editadoPor)} em ${escapeHTML(item.dataEdicao || '')}</p>` : ''}
 
         <label>Estado de Conservação:</label>
         <select id="estadoAtual" style="width:100%; padding:10px; margin:8px 0; border-radius:8px;" ${!podeEditar ? 'disabled' : ''}>
@@ -493,17 +501,19 @@ function salvarAlteracoesFicha(num) {
 
     if (novoEstado !== item.estado) {
         item.estado = novoEstado;
-        registrarAtividade(`Estado alterado: ${item.nome} → ${novoEstado}`);
+        registrarAtividade(`Estado alterado por ${usuarioLogado}: ${item.nome} → ${novoEstado}`);
         alterado = true;
     }
 
     if (novaLocalizacao && novaLocalizacao !== item.localizacao) {
         item.localizacao = novaLocalizacao;
-        registrarAtividade(`Localização alterada: ${item.nome} → ${novaLocalizacao}`);
+        registrarAtividade(`Localização alterada por ${usuarioLogado}: ${item.nome} → ${novaLocalizacao}`);
         alterado = true;
     }
 
     if (alterado) {
+        item.editadoPor = usuarioLogado;
+        item.dataEdicao = new Date().toLocaleString('pt-BR');
         salvar();
         showToast("Alterações salvas com sucesso!", "success");
         fecharModal();
@@ -525,14 +535,14 @@ function excluirBem(num) {
         const ok = confirm(`Este bem possui ${chamadosRelacionados.length} chamado(s). Excluir mesmo assim? Os chamados serão removidos.`);
         if (!ok) return;
         chamados = chamados.filter(c => c.patrimonio !== num);
-        registrarAtividade(`Chamados do bem ${num} removidos por exclusão do patrimônio.`);
+        registrarAtividade(`Chamados do bem ${num} removidos por ${usuarioLogado} (exclusão do patrimônio).`);
         salvar();
     }
 
     if (!confirm("Tem certeza que deseja excluir este bem permanentemente?")) return;
 
-    bens = bens.filter(b => b.numero !== num);
-    registrarAtividade(`Bem excluído: Nº ${num}`);
+    const nomeBem = bens.find(b => b.numero === num)?.nome || num;
+    registrarAtividade(`Bem excluído por ${usuarioLogado}: ${nomeBem} (Nº ${num})`);
     salvar();
     fecharModal();
     filtrarTudo();
@@ -570,11 +580,12 @@ function abrirChamado() {
             descricao: descricao, 
             foto: foto64, 
             status: "Aberto", 
+            abertoPor: usuarioLogado, 
             tecnico: null, 
             feedback: "", 
             data: new Date().toLocaleString('pt-BR') 
         });
-        registrarAtividade(`Chamado aberto para ${patrimonioNum} - ${bemExistente.nome}`);
+        registrarAtividade(`Chamado aberto por ${usuarioLogado}: ${patrimonioNum} - ${bemExistente.nome}`);
         salvar();
         
         filtrarChamados('Aberto');
@@ -617,7 +628,7 @@ function excluirChamado(id) {
     if (!confirm(`Tem certeza que deseja excluir o chamado do patrimônio ${chamado.patrimonio}?`)) return;
 
     chamados = chamados.filter(c => c.id !== id);
-    registrarAtividade(`Chamado excluído: Patrimônio ${chamado.patrimonio}`);
+    registrarAtividade(`Chamado excluído por ${usuarioLogado}: Patrimônio ${chamado.patrimonio}`);
     salvar();
     filtrarChamados(filtroChamadoAtual);
     atualizarDashboard();
@@ -688,6 +699,13 @@ function renderizarChamados(filtro = null) {
             
             <h4>Patrimônio: ${escapeHTML(c.patrimonio)}</h4>
             <p class="descricao">${escapeHTML(c.descricao)}</p>
+
+            <div class="chamado-meta">
+                <span>📅 ${escapeHTML(c.data)}</span>
+                ${c.abertoPor ? `<span> Aberto por: <strong>${escapeHTML(c.abertoPor)}</strong></span>` : ''}
+                ${c.tecnico ? `<span> Aceito por: <strong>${escapeHTML(c.tecnico)}</strong></span>` : ''}
+                ${c.concluidoPor ? `<span> Concluído por: <strong>${escapeHTML(c.concluidoPor)}</strong></span>` : ''}
+            </div>
             
             ${c.foto ? `<img src="${escapeHTML(c.foto)}" class="foto-chamado" onclick="ampliarFoto('${escapeHTML(c.foto)}')">` : ''}
             
@@ -790,17 +808,17 @@ function concluirChamado(id, novoStatus) {
     chamado.status = novoStatus;
     chamado.feedback = feedback;
     chamado.dataConclusao = new Date().toLocaleString('pt-BR');
+    chamado.concluidoPor = usuarioLogado; 
 
     if (novoEstado) {
         const bem = bens.find(b => b.numero === chamado.patrimonio);
         if (bem && novoEstado !== bem.estado) {
             bem.estado = novoEstado;
-            registrarAtividade(`Chamado ${novoStatus.toLowerCase()}: ${bem.nome} → Estado alterado para ${novoEstado}`);
+            registrarAtividade(`Chamado ${novoStatus.toLowerCase()} por ${usuarioLogado}: ${bem.nome} → Estado alterado para ${novoEstado}`);
         }
     }
 
-    registrarAtividade(`Chamado ${novoStatus === 'Concluído' ? 'concluído' : 'encerrado sem reparo'} para ${chamado.patrimonio}`);
-
+    registrarAtividade(`Chamado ${novoStatus === 'Concluído' ? 'concluído' : 'encerrado sem reparo'} por ${usuarioLogado}: Patrimônio ${chamado.patrimonio}`);
     salvar();
     fecharModal();
     filtrarChamados(filtroChamadoAtual);
@@ -921,28 +939,54 @@ function gerarPDFItens() {
 
     const valorTotal = filtrados.reduce((acc, b) => acc + parseFloat(b.valor || 0), 0);
 
-    doc.setFontSize(12);
-    doc.text(`Total de Bens (filtrados): ${filtrados.length}   |   Valor Total: R$ ${valorTotal.toFixed(2)}`, 20, 55);
+    doc.setFontSize(8.5);
+    doc.setTextColor(71, 85, 105);
+    doc.text(`${filtrados.length} item(s) encontrado(s)   •   Valor total: R$ ${valorTotal.toLocaleString('pt-BR', {minimumFractionDigits:2})}`, 14, 49);
+    doc.setTextColor(0);
 
     const tabela = filtrados.map(b => [
-        b.data,
+        b.data || '—',
         b.numero,
-        b.nome.length > 38 ? b.nome.substring(0, 35) + "..." : b.nome,
+        b.nome.length > 32 ? b.nome.substring(0, 29) + "…" : b.nome,
         b.categoria,
         "R$ " + parseFloat(b.valor).toFixed(2),
-        b.localizacao,
-        b.estado
+        b.localizacao.length > 20 ? b.localizacao.substring(0, 18) + "…" : b.localizacao,
+        b.estado,
+        b.cadastradoPor || '—'
     ]);
 
     doc.autoTable({
-        startY: 65,
-        head: [['Data', 'Nº Patrimônio', 'Nome', 'Categoria', 'Valor', 'Localização', 'Estado']],
+        startY: 53,
+        head: [['Data', 'Nº', 'Nome', 'Categoria', 'Valor', 'Local', 'Estado', 'Cadastrado por']],
         body: tabela,
-        theme: 'grid',
-        styles: { fontSize: 9, cellPadding: 4 },
-        headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
-        alternateRowStyles: { fillColor: [248, 250, 252] },
-        margin: { left: 15, right: 15 }
+        theme: 'plain',
+        styles: {
+            fontSize: 8,
+            cellPadding: { top: 4, bottom: 4, left: 3, right: 3 },
+            textColor: [30, 41, 59],
+            lineColor: [226, 232, 240],
+            lineWidth: 0.3,
+        },
+        headStyles: {
+            fillColor: [248, 250, 252],
+            textColor: [100, 116, 139],
+            fontStyle: 'bold',
+            fontSize: 7.5,
+            lineWidth: { bottom: 0.5 },
+            lineColor: { bottom: [37, 99, 235] }
+        },
+        alternateRowStyles: { fillColor: [250, 252, 255] },
+        columnStyles: {
+            0: { cellWidth: 18 },
+            1: { cellWidth: 18 },
+            2: { cellWidth: 38 },
+            3: { cellWidth: 22 },
+            4: { cellWidth: 22, halign: 'right' },
+            5: { cellWidth: 28 },
+            6: { cellWidth: 16, halign: 'center' },
+            7: { cellWidth: 26 },
+        },
+        margin: { left: 14, right: 14 }
     });
 
     adicionarRodapePDF(doc);
@@ -1279,19 +1323,63 @@ function gerarPDFChamados() {
     const tabela = filtrados.map(c => [
         c.data,
         c.patrimonio,
-        c.descricao.length > 45 ? c.descricao.substring(0,42) + "..." : c.descricao,
+        c.descricao.length > 40 ? c.descricao.substring(0, 38) + "…" : c.descricao,
         c.status,
-        c.tecnico || "—",
-        c.feedback ? (c.feedback.length > 40 ? c.feedback.substring(0,37) + "..." : c.feedback) : "—"
+        c.abertoPor || '—',
+        c.tecnico || '—',
+        c.feedback ? (c.feedback.length > 35 ? c.feedback.substring(0, 33) + "…" : c.feedback) : '—'
     ]);
 
     doc.autoTable({
-        startY: 55,
-        head: [['Data', 'Patrimônio', 'Problema', 'Status', 'Técnico', 'Resolução']],
+        startY: 53,
+        head: [['Data', 'Patrimônio', 'Problema', 'Status', 'Aberto por', 'Técnico', 'Resolução']],
         body: tabela,
-        theme: 'striped',
-        styles: { fontSize: 9 },
-        headStyles: { fillColor: [37, 99, 235] }
+        theme: 'plain',
+        styles: {
+            fontSize: 8,
+            cellPadding: { top: 4, bottom: 4, left: 3, right: 3 },
+            textColor: [30, 41, 59],
+            lineColor: [226, 232, 240],
+            lineWidth: 0.3,
+        },
+        headStyles: {
+            fillColor: [248, 250, 252],
+            textColor: [100, 116, 139],
+            fontStyle: 'bold',
+            fontSize: 7.5,
+            lineWidth: { bottom: 0.5 },
+            lineColor: { bottom: [37, 99, 235] }
+        },
+        alternateRowStyles: { fillColor: [250, 252, 255] },
+        didDrawCell(data) {
+            // Pinta a célula de Status com cor temática
+            if (data.section === 'body' && data.column.index === 3) {
+                const status = filtrados[data.row.index]?.status;
+                const cores = {
+                    'Concluído':    [209, 250, 229],
+                    'Em andamento': [254, 243, 199],
+                    'Não reparado': [254, 226, 226],
+                    'Aberto':       [224, 231, 255],
+                };
+                if (cores[status]) {
+                    doc.setFillColor(...cores[status]);
+                    doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+                    doc.setTextColor(30, 41, 59);
+                    doc.setFontSize(8);
+                    doc.text(status, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 1, { align: 'center' });
+                }
+            }
+        },
+        columnStyles: {
+            0: { cellWidth: 24 },
+            1: { cellWidth: 18 },
+            2: { cellWidth: 38 },
+            3: { cellWidth: 22, halign: 'center' },
+            4: { cellWidth: 24 },
+            5: { cellWidth: 24 },
+            6: { cellWidth: 32 },
+        },
+        margin: { left: 14, right: 14 }
     });
 
     adicionarRodapePDF(doc);
@@ -1338,14 +1426,33 @@ function gerarPDFAtividades() {
         return (!ini || dataISO >= ini) && (!fim || dataISO <= fim);
     });
 
-    const tabela = filtrados.map(a => [a.data, a.texto]);
+    const tabela = filtrados.map(a => [a.data, a.responsavel || '—', a.texto]);
 
     doc.autoTable({
-        startY: 55,
-        head: [['Data/Hora', 'Descrição da Atividade']],
+        startY: 53,
+        head: [['Data/Hora', 'Responsável', 'Descrição da Atividade']],
         body: tabela,
-        theme: 'grid',
-        styles: { fontSize: 9 }
+        theme: 'plain',
+        styles: {
+            fontSize: 8,
+            cellPadding: { top: 4, bottom: 4, left: 3, right: 3 },
+            textColor: [30, 41, 59],
+            lineColor: [226, 232, 240],
+            lineWidth: 0.3,
+        },
+        headStyles: {
+            fillColor: [248, 250, 252],
+            textColor: [100, 116, 139],
+            fontStyle: 'bold',
+            fontSize: 7.5,
+        },
+        alternateRowStyles: { fillColor: [250, 252, 255] },
+        columnStyles: {
+            0: { cellWidth: 38 },
+            1: { cellWidth: 40 },
+            2: { cellWidth: 'auto' },
+        },
+        margin: { left: 14, right: 14 }
     });
 
     adicionarRodapePDF(doc);
@@ -1532,13 +1639,15 @@ function showToast(mensagem, tipo = "success") {
     }, 3000);
 }
 
-function toggleSenha(inputId, olho) {
+function toggleSenha(inputId, elemento) {
     const input = document.getElementById(inputId);
+    const icone = elemento.querySelector('i');
+
     if (input.type === 'password') {
         input.type = 'text';
-        olho.textContent = '🙈';
+        icone.className = 'fas fa-eye-slash';
     } else {
         input.type = 'password';
-        olho.textContent = '👁';
+        icone.className = 'fas fa-eye';
     }
 }

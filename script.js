@@ -26,8 +26,8 @@ function verificarPermissao(acao) {
     if (usuarioRole === 'admin') return true;
     if (usuarioRole === 'tecnico') {
         const acoesPermitidas = [
-            'abrirChamado', 'aceitarChamado',
-            'concluirChamado', 'excluirChamado', 'verInventario'
+            'cadastrarBem', 'editarBem', 'abrirChamado', 
+            'aceitarChamado', 'concluirChamado', 'excluirChamado', 'verInventario'
         ];
         return acoesPermitidas.includes(acao);
     }
@@ -346,10 +346,12 @@ function atualizarBotoesNav() {
 }
 
 // ====================== ATIVIDADES ======================
+const LIMITE_ATIVIDADES = 200;
+
 function registrarAtividade(msg) {
     const agora = new Date().toLocaleString('pt-BR');
     atividades.unshift({ data: agora, texto: msg, responsavel: usuarioLogado || "Sistema" });
-    if (atividades.length > 20) atividades.pop();
+    if (atividades.length > LIMITE_ATIVIDADES) atividades.pop();
     salvar();
 }
 
@@ -567,9 +569,9 @@ function abrirChamado() {
         return;
     }
 
-    const chamadoAberto = chamados.find(c => c.patrimonio === patrimonioNum && c.status === "Aberto");
-    if (chamadoAberto) {
-        showToast(`Já existe um chamado em aberto para o patrimônio ${patrimonioNum}.`, "error");
+    const chamadoAtivo = chamados.find(c => c.patrimonio === patrimonioNum && (c.status === "Aberto" || c.status === "Em andamento"));
+    if (chamadoAtivo) {
+        showToast(`Já existe um chamado ${chamadoAtivo.status.toLowerCase()} para o patrimônio ${patrimonioNum}.`, "error");
         return;
     }
 

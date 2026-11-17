@@ -15,6 +15,14 @@ usuarios = usuarios.map(u => {
 });
 localStorage.setItem("usuarios", JSON.stringify(usuarios));
 
+const MIGRACAO_CATEGORIA = { 'Mobiliário': '23', 'TI': '18', 'Áudio e Vídeo': '17' };
+bens = bens.map(b => {
+    if (b.tipoCodigo) return b;
+    const t = TIPOS_BEM.find(t => t.codigo === MIGRACAO_CATEGORIA[b.categoria]);
+    return t ? { ...b, categoria: t.nome, tipoCodigo: t.codigo, subtipoCodigo: "", subtipoNome: "" } : b;
+});
+localStorage.setItem("bens", JSON.stringify(bens));
+
 let usuarioLogado = "";
 let usuarioRole = "";
 let navHistorico = [];
@@ -25,10 +33,8 @@ let navIgnorarProxima = false;
 function verificarPermissao(acao) {
     if (usuarioRole === 'admin') return true;
     if (usuarioRole === 'tecnico') {
-        const acoesPermitidas = [
-            'cadastrarBem', 'editarBem', 'abrirChamado', 
-            'aceitarChamado', 'concluirChamado', 'excluirChamado', 'verInventario'
-        ];
+        // Conforme a modelagem: o Usuário (Técnico) só abre/acompanha chamados e consulta indicadores.
+        const acoesPermitidas = ['abrirChamado', 'acompanharChamado'];
         return acoesPermitidas.includes(acao);
     }
     return false;
@@ -58,6 +64,10 @@ function salvarUsuarios() {
 
 // ====================== INICIALIZAÇÃO ======================
 window.onload = () => {
+
+    carregarTipos();
+    preencherFiltrosCategoria();
+
     document.getElementById("dataCad").value = new Date().toISOString().split('T')[0];
     
     document.getElementById("cardAndamento").onclick = () => {
@@ -101,7 +111,7 @@ function configurarNavegacaoEnter() {
         }
 
         if (!document.getElementById("cadastro").classList.contains("escondido")) {
-            const campos = ["numero", "nome", "valor", "notaFiscal", "fornecedor", "localizacao", "estado", "categoria"];
+            const campos = ["numero", "nome", "valor", "notaFiscal", "fornecedor", "localizacao", "estado", "tipoBem", "subtipoBem"];
             const idx = campos.indexOf(ativo.id);
             if (idx !== -1 && idx < campos.length - 1) {
                 document.getElementById(campos[idx+1]).focus();
@@ -226,6 +236,9 @@ function login() {
             setTimeout(() => {
                 document.getElementById("sistema").classList.add("show");
             }, 50);
+            document.querySelectorAll('.menu nav button[data-admin]').forEach(b => {
+                b.style.display = usuarioRole === 'admin' ? '' : 'none';
+            });
             document.getElementById("usuarioInfo").innerHTML = `Olá, ${escapeHTML(usuario.nome)} (${usuarioRole === 'admin' ? 'Admin' : 'Técnico'})`;
             loading.style.display = "none";
             mostrarTela('dashboard');
@@ -243,6 +256,12 @@ function logout() {
 
 // ====================== NAVEGAÇÃO ======================
 function mostrarTela(id, filtroChamado = null) {
+    // Telas exclusivas do ADM (Consultar/Cadastrar Bens e Gerar Relatório)
+    if (usuarioRole !== 'admin' && ['bens', 'cadastro', 'relatorio'].includes(id)) {
+        showToast("Esta área é exclusiva do administrador.", "error");
+        id = 'dashboard';
+        filtroChamado = null;
+    }
     // Registra no histórico de navegação (exceto ao usar as setas)
     if (!navIgnorarProxima) {
         const entrada = { id, filtroChamado };
@@ -389,6 +408,20 @@ function cadastrarBem() {
         return;
     }
 
+    const tipo = buscarTipo(document.getElementById("tipoBem").value);
+    if (!tipo) {
+        showToast("Escolha um tipo válido da lista (Portaria CGE 195/2016).", "error");
+        return;
+    }
+    let sub = null;
+    if (tipo.subtipos.length > 0) {
+        sub = buscarSubtipo(tipo, document.getElementById("subtipoBem").value);
+        if (!sub) {
+            showToast("Escolha um subtipo válido da lista.", "error");
+            return;
+        }
+    }
+    
     const novo = {
         numero: numero,
         nome: nome,
@@ -397,7 +430,10 @@ function cadastrarBem() {
         fornecedor: document.getElementById("fornecedor").value.trim(),
         localizacao: document.getElementById("localizacao").value.trim() || "Não informada",
         estado: document.getElementById("estado").value,
-        categoria: document.getElementById("categoria").value,
+        categoria: tipo.nome,
+        tipoCodigo: tipo.codigo,
+        subtipoCodigo: sub ? sub.codigo : "",
+        subtipoNome: sub ? sub.nome : "",
         data: document.getElementById("dataCad").value,
         cadastradoPor: usuarioLogado
     };
@@ -413,10 +449,132 @@ function cadastrarBem() {
     document.getElementById("notaFiscal").value = "";
     document.getElementById("fornecedor").value = "";
     document.getElementById("localizacao").value = "";
+    document.getElementById("tipoBem").value = "";
+    tipoSelecionado = null;
+    aoEscolherTipo();
     document.getElementById("numero").focus();
 
     salvar();
     atualizarDashboard();
+}
+
+let tipoSelecionado = null;
+
+function attr(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+function rotuloTipo(t) { return `${t.codigo} - ${t.nome}`; }
+function rotuloSub(s)  { return `${s.codigo} - ${s.nome}`; }
+
+function obterCodigoCategoriaBem(bem) {
+    if (!bem) return "";
+
+    if (bem.tipoCodigo) {
+        return String(bem.tipoCodigo).padStart(2, "0");
+    }
+
+    // Compatibilidade com bens cadastrados antes da classificação oficial.
+    const categoriasAntigas = {
+        "Mobiliário": "23",
+        "TI": "18",
+        "Áudio e Vídeo": "17"
+    };
+
+    if (categoriasAntigas[bem.categoria]) {
+        return categoriasAntigas[bem.categoria];
+    }
+
+    const tipo = TIPOS_BEM.find(t =>
+        t.nome.trim().toLowerCase() ===
+        String(bem.categoria || "").trim().toLowerCase()
+    );
+
+    return tipo ? String(tipo.codigo).padStart(2, "0") : "";
+}
+
+function buscarTipo(valor) {
+    const v = valor.trim().toLowerCase();
+    return TIPOS_BEM.find(t => rotuloTipo(t).toLowerCase() === v);
+}
+function buscarSubtipo(tipo, valor) {
+    const v = valor.trim().toLowerCase();
+    return tipo.subtipos.find(s => rotuloSub(s).toLowerCase() === v);
+}
+
+function carregarTipos() {
+    document.getElementById("listaTipos").innerHTML =
+        TIPOS_BEM.map(t => `<option value="${attr(rotuloTipo(t))}"></option>`).join('');
+}
+
+function aoEscolherTipo() {
+    const tipo = buscarTipo(document.getElementById("tipoBem").value);
+    if (tipo === tipoSelecionado) return;
+    tipoSelecionado = tipo;
+
+    const sub = document.getElementById("subtipoBem");
+    const lista = document.getElementById("listaSubtipos");
+    sub.value = "";
+    lista.innerHTML = "";
+
+    if (!tipo) {
+        sub.disabled = true;
+        sub.placeholder = "Escolha o tipo primeiro";
+    } else if (tipo.subtipos.length === 0) {
+        sub.disabled = true;
+        sub.placeholder = "Este tipo não possui subtipos";
+    } else {
+        sub.disabled = false;
+        sub.placeholder = "Subtipo * (digite para pesquisar)";
+        lista.innerHTML = tipo.subtipos
+            .map(s => `<option value="${attr(rotuloSub(s))}">${attr(s.obs.slice(0, 80))}</option>`)
+            .join('');
+    }
+}
+
+function preencherFiltrosCategoria() {
+    ["filtroChamadoCategoria", "filtroCategoriaPDF"].forEach(id => {
+        const sel = document.getElementById(id);
+
+        if (!sel) return;
+
+        const valorAtual = sel.value;
+
+        sel.innerHTML =
+            '<option value="">Todas as categorias</option>' +
+            TIPOS_BEM.map(t =>
+                `<option value="${attr(String(t.codigo).padStart(2, "0"))}">
+                    ${attr(rotuloTipo(t))}
+                </option>`
+            ).join('');
+
+        // Mantém a seleção caso a lista seja recarregada.
+        if ([...sel.options].some(op => op.value === valorAtual)) {
+            sel.value = valorAtual;
+        }
+    });
+}
+
+function preencherFiltrosCategoria() {
+    ["filtroChamadoCategoria", "filtroCategoriaPDF"].forEach(id => {
+        const sel = document.getElementById(id);
+
+        if (!sel) return;
+
+        const valorAtual = sel.value;
+
+        sel.innerHTML =
+            '<option value="">Todas as categorias</option>' +
+            TIPOS_BEM.map(t =>
+                `<option value="${attr(String(t.codigo).padStart(2, "0"))}">
+                    ${attr(rotuloTipo(t))}
+                </option>`
+            ).join('');
+
+        // Mantém a seleção caso a lista seja recarregada.
+        if ([...sel.options].some(op => op.value === valorAtual)) {
+            sel.value = valorAtual;
+        }
+    });
 }
 
 // ====================== INVENTÁRIO ======================
@@ -462,7 +620,11 @@ function verFicha(num) {
         <p><strong>Nº Patrimônio:</strong> ${escapeHTML(item.numero)}</p>
         <p><strong>Valor:</strong> R$ ${parseFloat(item.valor).toFixed(2)}</p>
         <p><strong>Localização:</strong> ${escapeHTML(item.localizacao)}</p>
-        <p><strong>Categoria:</strong> ${escapeHTML(item.categoria)}</p>
+        <p><strong>Tipo (Portaria CGE 195/2016):</strong> ${escapeHTML(item.tipoCodigo ? item.tipoCodigo + ' - ' + item.categoria : item.categoria)}</p>
+        <p><strong>Subtipo:</strong> ${escapeHTML(item.subtipoCodigo ? item.subtipoCodigo + ' - ' + item.subtipoNome : '—')}</p>
+        <p><strong>Conta contábil:</strong> ${escapeHTML(item.tipoCodigo ? PREFIXO_CONTA + '.' + item.tipoCodigo + (item.subtipoCodigo ? '.' + item.subtipoCodigo : '') : '—')}</p>
+        <p><strong>Nota Fiscal:</strong> ${escapeHTML(item.notaFiscal || '—')}</p>
+        <p><strong>Fornecedor:</strong> ${escapeHTML(item.fornecedor || '—')}</p>
         <p><strong>Data de Entrada:</strong> ${escapeHTML(item.data)}</p>
         ${item.cadastradoPor ? `<p><strong>Cadastrado por:</strong> ${escapeHTML(item.cadastradoPor)}</p>` : ''}
         ${item.editadoPor ? `<p><strong>Última edição por:</strong> ${escapeHTML(item.editadoPor)} em ${escapeHTML(item.dataEdicao || '')}</p>` : ''}
@@ -544,6 +706,7 @@ function excluirBem(num) {
     if (!confirm("Tem certeza que deseja excluir este bem permanentemente?")) return;
 
     const nomeBem = bens.find(b => b.numero === num)?.nome || num;
+    bens = bens.filter(b => b.numero !== num);
     registrarAtividade(`Bem excluído por ${usuarioLogado}: ${nomeBem} (Nº ${num})`);
     salvar();
     fecharModal();
@@ -678,7 +841,10 @@ function renderizarChamados(filtro = null) {
         // Filtro de categoria (busca pelo bem relacionado)
         if (cat) {
             const bem = bens.find(b => b.numero === c.patrimonio);
-            if (!bem || bem.categoria !== cat) return false;
+
+            if (!bem || obterCodigoCategoriaBem(bem) !== String(cat).padStart(2, "0")) {
+                return false;
+            }
         }
 
         return true;
@@ -889,13 +1055,13 @@ function gerarRelatorioItens() {
 
     let filtrados = bens.filter(b => {
         const dataOk = (!ini || b.data >= ini) && (!fim || b.data <= fim);
-        const catOk = !cat || b.categoria === cat;
+        const catOk = !cat || obterCodigoCategoriaBem(b) === String(cat).padStart(2, "0");
         const estOk = !est || b.estado === est;
         return dataOk && catOk && estOk;
     });
 
     document.getElementById("cabecalhoRelatorio").innerHTML = `
-        <table>
+        <tr>
             <th>Data Entrada</th>
             <th>Nº Patrimônio</th>
             <th>Nome do Item</th>
@@ -934,7 +1100,7 @@ function gerarPDFItens() {
 
     let filtrados = bens.filter(b => {
         const dataOk = (!ini || b.data >= ini) && (!fim || b.data <= fim);
-        const catOk = !cat || b.categoria === cat;
+        const catOk = !cat || obterCodigoCategoriaBem(b) === String(cat).padStart(2, "0");
         const estOk = !est || b.estado === est;
         return dataOk && catOk && estOk;
     });
@@ -1003,7 +1169,7 @@ async function gerarExcelItens() {
 
     let filtrados = bens.filter(b => {
         const dataOk = (!ini || b.data >= ini) && (!fim || b.data <= fim);
-        const catOk = !cat || b.categoria === cat;
+        const catOk = !cat || obterCodigoCategoriaBem(b) === String(cat).padStart(2, "0");
         const estOk = !est || b.estado === est;
         return dataOk && catOk && estOk;
     });
@@ -1273,14 +1439,14 @@ function gerarRelatorioChamados() {
     });
 
     document.getElementById("cabecalhoRelatorio").innerHTML = `
-        <table>
+        <tr>
             <th>Data</th>
             <th>Patrimônio</th>
             <th>Descrição</th>
             <th>Status</th>
             <th>Técnico</th>
             <th>Resolução</th>
-        </table>`;
+        </tr>`;
 
     const html = filtrados.map(c => `
         <tr>
@@ -1399,7 +1565,7 @@ function gerarRelatorioAtividades() {
         return (!ini || dataISO >= ini) && (!fim || dataISO <= fim);
     });
 
-    document.getElementById("cabecalhoRelatorio").innerHTML = `<table><th>Data e Hora</th><th>Atividade Registrada</th></tr>`;
+    document.getElementById("cabecalhoRelatorio").innerHTML = `<tr><th>Data e Hora</th><th>Atividade Registrada</th></tr>`;
     
     const html = filtrados.map(a => `
         <tr>
@@ -1500,7 +1666,7 @@ function atualizarEstatisticas() {
             labels: labelsCat,
             datasets: [{
                 data: dataCat,
-                backgroundColor: coresCat.slice(0, labelsCat.length),
+                backgroundColor: labelsCat.map((_, i) => `hsl(${(i * 47) % 360} 65% 55%)`),
                 borderWidth: 2
             }]
         },

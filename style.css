@@ -498,13 +498,17 @@
         margin: 24px 0 20px;
     }
 
-    .filtros-chamados-avancados {
+    .filtros-chamados-avancados .campo-data {
         display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-        align-items: center;
-        margin-bottom: 16px;
+        flex-direction: row; /* Garante que fique lado a lado */
+        align-items: center; /* Centraliza o texto com a caixa */
+        gap: 8px;
     }
+
+    .filtros-chamados-avancados .campo-data label {
+    margin-bottom: 0; /* Remove a margem inferior para não desalinhar */
+    white-space: nowrap; /* Impede que o texto quebre linha */
+}
 
     .filtros-chamados-avancados select {
         flex: 1;
@@ -518,7 +522,8 @@
     }
 
     .filtros-chamados-avancados .campo-data input {
-        width: auto;
+        width: 240px;
+        max-width: 100%;
     }
 
     .abas-chamados button {

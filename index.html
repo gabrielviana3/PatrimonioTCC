@@ -77,10 +77,10 @@
         </div>
         <nav>
             <button onclick="mostrarTela('dashboard')">Dashboard</button>
-            <button onclick="mostrarTela('bens')">Inventário</button>
-            <button onclick="mostrarTela('cadastro')">Cadastrar</button>
+            <button data-admin onclick="mostrarTela('bens')">Inventário</button>
+            <button data-admin onclick="mostrarTela('cadastro')">Cadastrar</button>
             <button onclick="mostrarTela('chamados', 'todos')">Chamados</button>
-            <button onclick="mostrarTela('relatorio')">Relatórios</button>
+            <button data-admin onclick="mostrarTela('relatorio')">Relatórios</button>
             <button onclick="logout()" class="btn-sair">Sair</button>
         </nav>
     </aside>
@@ -140,11 +140,15 @@
                     <option value="Regular">Regular</option>
                     <option value="Ruim">Ruim</option>
                 </select>
-                <select id="categoria">
-                    <option>Mobiliário</option>
-                    <option>TI</option>
-                    <option>Áudio e Vídeo</option>
-                </select>
+                <label>Tipo do bem (Portaria CGE nº 195/2016):</label>
+                <input id="tipoBem" list="listaTipos" placeholder="Tipo do bem * (digite para pesquisar)"
+                    autocomplete="off" oninput="aoEscolherTipo()">
+                <datalist id="listaTipos"></datalist>
+
+                <input id="subtipoBem" list="listaSubtipos" placeholder="Escolha o tipo primeiro"
+                    autocomplete="off" disabled>
+                <datalist id="listaSubtipos"></datalist>
+                
                 <button onclick="cadastrarBem()">Salvar Bem</button>
             </div>
         </section>
@@ -163,21 +167,20 @@
                 </div>
                 <button onclick="abrirChamado()">Abrir Chamado</button>
             </div>
-
+<br>
             <div class="filtros-chamados-avancados">
                 <div class="campo-data">
                     <label>De:</label>
                     <input type="date" id="filtroChamadoDataInicio" onchange="filtrarChamados(filtroChamadoAtual)">
                 </div>
+            
                 <div class="campo-data">
                     <label>Até:</label>
                     <input type="date" id="filtroChamadoDataFim" onchange="filtrarChamados(filtroChamadoAtual)">
                 </div>
+                <br>
                 <select id="filtroChamadoCategoria" onchange="filtrarChamados(filtroChamadoAtual)">
-                    <option value="">Todas Categorias</option>
-                    <option>Mobiliário</option>
-                    <option>TI</option>
-                    <option>Áudio e Vídeo</option>
+                    <option value="">Todas as categorias</option>
                 </select>
             </div>
 
@@ -218,10 +221,7 @@
             <div id="abaItens" class="conteudo-aba">
                 <div style="display:flex; gap:10px; margin:15px 0; flex-wrap:wrap; align-items:center;">
                     <select id="filtroCategoriaPDF">
-                        <option value="">Todas Categorias</option>
-                        <option>Mobiliário</option>
-                        <option>TI</option>
-                        <option>Áudio e Vídeo</option>
+                        <option value="">Todas as categorias</option>
                     </select>
                     <select id="filtroEstadoPDF">
                         <option value="">Todos Estados</option>
@@ -298,7 +298,7 @@
 
     </main>
 </div>
-
+<script src="classificacao.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
